@@ -1,0 +1,5 @@
+lk\medilink\notification\messaging\AppointmentEventHandlers$AppointmentCancelled.class
+lk\medilink\notification\messaging\AppointmentEventHandlers$AppointmentCreated.class
+lk\medilink\notification\messaging\AppointmentEventHandlers.class
+lk\medilink\notification\messaging\RabbitConfig.class
+lk\medilink\notification\NotificationServiceApplication.class

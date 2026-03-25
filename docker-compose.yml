@@ -1,0 +1,33 @@
+services:
+  postgres-auth:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: authdb
+      POSTGRES_USER: auth
+      POSTGRES_PASSWORD: auth
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_auth_data:/var/lib/postgresql/data
+
+  postgres-appointment:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: appointmentdb
+      POSTGRES_USER: appointment
+      POSTGRES_PASSWORD: appointment
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_appt_data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+volumes:
+  pg_auth_data:
+  pg_appt_data:
+

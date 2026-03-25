@@ -1,0 +1,31 @@
+package lk.medilink.appointment;
+
+import lk.medilink.appointment.repo.AppointmentRepository;
+import lk.medilink.appointment.service.AppointmentAppService;
+import org.junit.jupiter.api.Test;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+
+import java.time.Instant;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+class AppointmentAppServiceTest {
+	@Test
+	void create_publishesEvent() {
+		AppointmentRepository repo = mock(AppointmentRepository.class);
+		RabbitTemplate rabbit = mock(RabbitTemplate.class);
+		AppointmentAppService svc = new AppointmentAppService(repo, rabbit);
+
+		when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+		svc.create(1L, 2L, Instant.now().plusSeconds(3600));
+
+		verify(rabbit, times(1)).convertAndSend(
+			eq("medilink.events"),
+			eq("appointment.created"),
+			any(Object.class)
+		);
+	}
+}

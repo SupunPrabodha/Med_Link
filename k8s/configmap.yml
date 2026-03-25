@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medilink-config
+  namespace: medilink
+data:
+  EUREKA_URL: "http://service-discovery:8761/eureka"
+  RABBIT_HOST: "rabbitmq"
+
