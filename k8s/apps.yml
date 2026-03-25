@@ -217,8 +217,10 @@ spec:
           image: medilink/api-gateway:0.1.0
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8080
+            - containerPort: 8090
           env:
+            - name: SERVER_PORT
+              value: "8090"
             - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
               valueFrom:
                 configMapKeyRef:
@@ -239,6 +241,135 @@ spec:
   selector:
     app: api-gateway
   ports:
-    - port: 8080
-      targetPort: 8080
-
+    - port: 8090
+      targetPort: 8090
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doctor-service
+  namespace: medilink
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: doctor-service
+  template:
+    metadata:
+      labels:
+        app: doctor-service
+    spec:
+      containers:
+        - name: doctor-service
+          image: medilink/doctor-service:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8084
+          env:
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: medilink-config
+                  key: EUREKA_URL
+            - name: SPRING_RABBITMQ_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: medilink-config
+                  key: RABBIT_HOST
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: medilink-secrets
+                  key: DOCTOR_DB_URL
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: medilink-secrets
+                  key: DOCTOR_DB_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: medilink-secrets
+                  key: DOCTOR_DB_PASS
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: doctor-service
+  namespace: medilink
+spec:
+  selector:
+    app: doctor-service
+  ports:
+    - port: 8084
+      targetPort: 8084
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  namespace: medilink
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+        - name: payment-service
+          image: medilink/payment-service:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8085
+          env:
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: medilink-config
+                  key: EUREKA_URL
+            - name: SPRING_RABBITMQ_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: medilink-config
+                  key: RABBIT_HOST
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: medilink-secrets
+                  key: PAYMENT_DB_URL
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: medilink-secrets
+                  key: PAYMENT_DB_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: medilink-secrets
+                  key: PAYMENT_DB_PASS
+            - name: PAYHERE_MERCHANT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: medilink-secrets
+                  key: PAYHERE_MERCHANT_ID
+            - name: PAYHERE_MERCHANT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: medilink-secrets
+                  key: PAYHERE_MERCHANT_SECRET
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  namespace: medilink
+spec:
+  selector:
+    app: payment-service
+  ports:
+    - port: 8085
+      targetPort: 8085

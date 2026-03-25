@@ -17,6 +17,10 @@ spring:
           uri: lb://auth-service
           predicates:
             - Path=/api/auth/**
+        - id: payhere-callback
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payments/callback/payhere
         - id: appointment-service
           uri: lb://appointment-service
           predicates:
@@ -34,6 +38,30 @@ spring:
             - name: JwtAuthGatewayFilter
               args:
                 requiredRoles: ["ADMIN"]
+        - id: doctor-service
+          uri: lb://doctor-service
+          predicates:
+            - Path=/api/doctors/**
+          filters:
+            - name: JwtAuthGatewayFilter
+              args:
+                requiredRoles: ["PATIENT","DOCTOR","ADMIN"]
+        - id: doctor-admin
+          uri: lb://doctor-service
+          predicates:
+            - Path=/api/admin/doctors/**
+          filters:
+            - name: JwtAuthGatewayFilter
+              args:
+                requiredRoles: ["ADMIN"]
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payments/**
+          filters:
+            - name: JwtAuthGatewayFilter
+              args:
+                requiredRoles: ["PATIENT","ADMIN"]
 
 security:
   jwt:

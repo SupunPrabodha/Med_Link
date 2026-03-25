@@ -17,6 +17,9 @@ public class AppointmentEventHandlers {
 	public record AppointmentCancelled(Long appointmentId, Long patientId, Long doctorId, Instant slotTime) {
 	}
 
+	public record AppointmentConfirmed(Long appointmentId, Long patientId, Long doctorId, Instant slotTime, Instant confirmedAt) {
+	}
+
 	@RabbitListener(queues = "notification.appointment.created")
 	public void onCreated(AppointmentCreated event) {
 		log.info("[NOTIFY] Appointment created: {}", event);
@@ -26,5 +29,9 @@ public class AppointmentEventHandlers {
 	public void onCancelled(AppointmentCancelled event) {
 		log.info("[NOTIFY] Appointment cancelled: {}", event);
 	}
-}
 
+	@RabbitListener(queues = "notification.appointment.confirmed")
+	public void onConfirmed(AppointmentConfirmed event) {
+		log.info("[NOTIFY] Appointment confirmed: {}", event);
+	}
+}

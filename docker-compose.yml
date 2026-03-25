@@ -21,6 +21,28 @@ services:
     volumes:
       - pg_appt_data:/var/lib/postgresql/data
 
+  postgres-doctor:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: doctordb
+      POSTGRES_USER: doctor
+      POSTGRES_PASSWORD: doctor
+    ports:
+      - "5434:5432"
+    volumes:
+      - pg_doctor_data:/var/lib/postgresql/data
+
+  postgres-payment:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: paymentdb
+      POSTGRES_USER: payment
+      POSTGRES_PASSWORD: payment
+    ports:
+      - "5435:5432"
+    volumes:
+      - pg_payment_data:/var/lib/postgresql/data
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -30,4 +52,5 @@ services:
 volumes:
   pg_auth_data:
   pg_appt_data:
-
+  pg_doctor_data:
+  pg_payment_data:

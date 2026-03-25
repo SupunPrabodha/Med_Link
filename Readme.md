@@ -26,10 +26,14 @@ This repository contains a **marks-aligned, runnable microservices skeleton** de
 | `auth-service` | 8081 | Register/login, issues JWT |
 | `appointment-service` | 8082 | Appointment CRUD, publishes RabbitMQ events |
 | `notification-service` | 8083 | Consumes events, logs "email/SMS" notifications |
+| `doctor-service` | 8084 | Doctor onboarding + admin verification |
+| `payment-service` | 8085 | PayHere-style payment intents + notify callback (signature validation) |
 
 ### Infrastructure (Docker)
 - PostgreSQL for Auth (`authdb`) on port `5432`
 - PostgreSQL for Appointment (`appointmentdb`) on host port `5433`
+- PostgreSQL for Doctor (`doctordb`) on host port `5434`
+- PostgreSQL for Payments (`paymentdb`) on host port `5435`
 - RabbitMQ + Management UI on ports `5672` and `15672`
 
 ---
@@ -76,7 +80,9 @@ mvn -DskipTests=false test
 ```powershell
 mvn -pl service-discovery spring-boot:run
 mvn -pl auth-service spring-boot:run
+mvn -pl doctor-service spring-boot:run
 mvn -pl appointment-service spring-boot:run
+mvn -pl payment-service spring-boot:run
 mvn -pl notification-service spring-boot:run
 mvn -pl api-gateway spring-boot:run
 ```
@@ -95,29 +101,59 @@ Eureka dashboard: http://localhost:8761
 - Gateway Swagger UI: http://localhost:8090/swagger
 - Auth Service OpenAPI: http://localhost:8081/swagger-ui/index.html
 - Appointment Service OpenAPI: http://localhost:8082/swagger-ui/index.html
+- Doctor Service OpenAPI: http://localhost:8084/swagger-ui/index.html
+- Payment Service OpenAPI: http://localhost:8085/swagger-ui/index.html
 
 ---
 
-## 🧪 Quick Workflow Test (Auth ➜ Appointment ➜ Notification)
+## 🧪 Full Workflow Test (Doctor Verification ➜ Appointment ➜ PayHere Payment ➜ Confirmation)
 
-1) Register a patient:
+### A) Create users
+Register 3 users via gateway:
+- Admin: `role=ADMIN`
+- Doctor: `role=DOCTOR`
+- Patient: `role=PATIENT`
+
+Endpoints:
 - `POST http://localhost:8090/api/auth/register`
+- `POST http://localhost:8090/api/auth/login`
 
-Body:
-```json
-{ "email": "patient1@demo.com", "password": "Passw0rd!", "role": "PATIENT" }
-```
+### B) Doctor onboarding + admin verification
+1) Doctor creates profile:
+- `POST http://localhost:8090/api/doctors/me/profile`
+- Header: `Authorization: Bearer <doctorToken>`
 
-2) Copy `accessToken`, then create appointment:
+2) Admin approves:
+- `GET http://localhost:8090/api/admin/doctors/pending`
+- `POST http://localhost:8090/api/admin/doctors/{doctorId}/approve`
+- Header: `Authorization: Bearer <adminToken>`
+
+### C) Patient creates appointment (PENDING_PAYMENT)
 - `POST http://localhost:8090/api/appointments`
-- Header: `Authorization: Bearer <token>`
+- Header: `Authorization: Bearer <patientToken>`
 
-Body:
-```json
-{ "doctorId": 10, "slotTime": "2030-01-01T10:00:00Z" }
-```
+### D) Create PayHere payment intent (realistic)
+- `POST http://localhost:8090/api/payments/intents/payhere`
+- Header: `Authorization: Bearer <patientToken>`
 
-3) Watch logs in `notification-service` – it should log the consumed `appointment.created` event.
+This returns:
+- `checkoutUrl` (PayHere sandbox)
+- `formFields` (merchant_id, order_id, amount, currency, notify_url, ...)
+
+> In a real frontend, you render an HTML `<form action="checkoutUrl" method="post">` with these fields.
+
+### E) PayHere notify callback
+PayHere will call the notify URL:
+- `POST http://localhost:8090/api/payments/callback/payhere`
+
+`payment-service` verifies the **MD5 signature** and publishes `payment.completed`, which the `appointment-service` consumes to mark the appointment **CONFIRMED** and publish `appointment.confirmed`.
+
+### F) Verify
+- `GET http://localhost:8090/api/appointments` should show `CONFIRMED`
+- `notification-service` logs should show:
+  - payment completed
+  - appointment confirmed
+  - doctor verified
 
 ---
 
@@ -157,10 +193,11 @@ See `k8s/README.md`.
 
 ## Next Steps (optional to expand)
 
-- Add `doctor-service` and availability search
-- Add `payment-service` (PayHere sandbox webhook)
-- Add `telemedicine-service` (Jitsi meeting provisioning)
-- Add notification persistence and real email provider integration
+- Add telemedicine-service (Jitsi meeting provisioning)
+- Add patient profile/report upload service
+- Add prescriptions service
+- Add AI symptom checker service
+- Persist notification logs + audit trail
 
 ---
 

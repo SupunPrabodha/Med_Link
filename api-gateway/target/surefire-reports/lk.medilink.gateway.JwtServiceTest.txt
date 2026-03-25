@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: lk.medilink.gateway.JwtServiceTest
 -------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.319 s -- in lk.medilink.gateway.JwtServiceTest
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.286 s -- in lk.medilink.gateway.JwtServiceTest

@@ -101,4 +101,107 @@ spec:
   ports:
     - port: 5432
       targetPort: 5432
-
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-doctor
+  namespace: medilink
+spec:
+  serviceName: postgres-doctor
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-doctor
+  template:
+    metadata:
+      labels:
+        app: postgres-doctor
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          env:
+            - name: POSTGRES_DB
+              value: doctordb
+            - name: POSTGRES_USER
+              value: doctor
+            - name: POSTGRES_PASSWORD
+              value: doctor
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-doctor
+  namespace: medilink
+spec:
+  selector:
+    app: postgres-doctor
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-payment
+  namespace: medilink
+spec:
+  serviceName: postgres-payment
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-payment
+  template:
+    metadata:
+      labels:
+        app: postgres-payment
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          env:
+            - name: POSTGRES_DB
+              value: paymentdb
+            - name: POSTGRES_USER
+              value: payment
+            - name: POSTGRES_PASSWORD
+              value: payment
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-payment
+  namespace: medilink
+spec:
+  selector:
+    app: postgres-payment
+  ports:
+    - port: 5432
+      targetPort: 5432

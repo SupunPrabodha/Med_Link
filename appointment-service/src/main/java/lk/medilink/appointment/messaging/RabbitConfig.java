@@ -17,13 +17,18 @@ public class RabbitConfig {
 	public Declarables appointmentBindings(TopicExchange exchange) {
 		Queue createdQueue = new Queue("notification.appointment.created", true);
 		Queue cancelledQueue = new Queue("notification.appointment.cancelled", true);
+		Queue confirmedQueue = new Queue("notification.appointment.confirmed", true);
+		Queue paymentCompletedQueue = new Queue("appointment.payment.completed", true);
 
 		return new Declarables(
 				createdQueue,
 				cancelledQueue,
+				confirmedQueue,
+				paymentCompletedQueue,
 				BindingBuilder.bind(createdQueue).to(exchange).with("appointment.created"),
-				BindingBuilder.bind(cancelledQueue).to(exchange).with("appointment.cancelled")
+				BindingBuilder.bind(cancelledQueue).to(exchange).with("appointment.cancelled"),
+				BindingBuilder.bind(confirmedQueue).to(exchange).with("appointment.confirmed"),
+				BindingBuilder.bind(paymentCompletedQueue).to(exchange).with("payment.completed")
 		);
 	}
 }
-

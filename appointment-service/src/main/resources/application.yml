@@ -5,7 +5,7 @@ spring:
   application:
     name: appointment-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/appointmentdb
+    url: jdbc:postgresql://localhost:5433/appointmentdb
     username: appointment
     password: appointment
   jpa:
@@ -27,4 +27,3 @@ management:
     web:
       exposure:
         include: health,info
-
