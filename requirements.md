@@ -2,6 +2,26 @@
 
 ## 📌 Project Overview
 
+## ✅ Current Implementation Scope (this repository)
+
+This repository is a **runnable microservices skeleton** aligned to the core distributed-systems requirements (Gateway + Discovery + Auth + RBAC + async events + per-service databases + Docker/K8s manifests).
+
+Implemented as runnable services (see `Readme.md` for ports and workflow):
+- Service Discovery (Eureka)
+- API Gateway (routing + JWT validation + basic RBAC)
+- Auth Service (register/login, issues JWT)
+- Doctor Service (onboarding + admin verification)
+- Appointment Service (CRUD + appointment lifecycle events)
+- Payment Service (PayHere-style intent + notify callback signature validation)
+- Notification Service (consumes events, logs notifications)
+
+Not implemented in this skeleton (kept as **target scope / future extensions** in this document):
+- Frontend (React)
+- Patient service + medical report uploads
+- Telemedicine (Jitsi)
+- Prescriptions
+- AI symptom checker
+
 MediLink LK is a cloud-native, microservices-based healthcare platform designed to facilitate digital medical services including:
 
 - Patient registration and profile management

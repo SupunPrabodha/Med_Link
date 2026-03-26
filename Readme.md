@@ -13,7 +13,7 @@ This repository contains a **marks-aligned, runnable microservices skeleton** de
 - Per-service data ownership (PostgreSQL per service)
 - Professional documentation, Swagger/OpenAPI, and tests
 
-> Note: The full product scope in `requirements.md` (telemedicine, payments, AI symptom checker) is included as **architecture** and **extensible placeholders**. The runnable implementation focuses on the core DS patterns + primary workflows (Auth + Appointment + Notification).
+> Note: The full product scope in `requirements.md` (telemedicine, AI symptom checker, etc.) is included as **architecture** and **extensible placeholders**. The runnable implementation focuses on core DS patterns + primary workflows (Auth + Doctor verification + Appointment + Payments + Notifications).
 
 ---
 
@@ -171,7 +171,7 @@ See `k8s/README.md`.
 
 ## 📦 Repo Structure
 
-- `api-gateway/`, `auth-service/`, `appointment-service/`, `notification-service/`, `service-discovery/` – independent microservices (Maven modules)
+- `api-gateway/`, `auth-service/`, `appointment-service/`, `notification-service/`, `doctor-service/`, `payment-service/`, `service-discovery/` – independent microservices (Maven modules)
 - `docker-compose.yml` – local infrastructure
 - `k8s/` – Kubernetes manifests
 - `docs/` – architecture and workflow diagrams
@@ -182,8 +182,8 @@ See `k8s/README.md`.
 
 - Microservices + API Gateway + Eureka: ✅
 - JWT authentication + RBAC: ✅ (enforced at gateway; BCrypt in auth)
-- RabbitMQ async events: ✅ (appointment.created/cancelled)
-- PostgreSQL per service: ✅ (separate auth + appointment DBs)
+- RabbitMQ async events: ✅ (appointment.* / doctor.* / payment.*)
+- PostgreSQL per service: ✅ (auth + appointment + doctor + payment DBs)
 - Docker Compose: ✅
 - Kubernetes manifests (Deployments, Services, ConfigMaps, Secrets, Ingress): ✅
 - Swagger API specs: ✅
