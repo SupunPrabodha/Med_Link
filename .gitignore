@@ -26,5 +26,9 @@ bin/
 ### VS Code ###
 .vscode/
 
+### Maven / Java build ###
+**/target/
+*.class
+
 ### Mac OS ###
 .DS_Store
