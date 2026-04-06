@@ -1,0 +1,51 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.2)
+
+2026-04-06T12:51:52.581+05:30  INFO 4116 --- [notification-service] [           main] l.m.n.NotificationServiceApplication     : Starting NotificationServiceApplication using Java 17.0.16 with PID 4116 (F:\Projects\DS Project\notification-service\target\classes started by ASUS TUF in F:\Projects\DS Project\notification-service)
+2026-04-06T12:51:52.588+05:30  INFO 4116 --- [notification-service] [           main] l.m.n.NotificationServiceApplication     : No active profile set, falling back to 1 default profile: "default"
+2026-04-06T12:51:54.586+05:30  INFO 4116 --- [notification-service] [           main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=d67ed6f8-9ddf-3ebf-8c4b-477535baa368
+2026-04-06T12:51:54.726+05:30  WARN 4116 --- [notification-service] [           main] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.cloud.client.loadbalancer.LoadBalancerAutoConfiguration$DeferringLoadBalancerInterceptorConfig' of type [org.springframework.cloud.client.loadbalancer.LoadBalancerAutoConfiguration$DeferringLoadBalancerInterceptorConfig] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). The currently created BeanPostProcessor [lbRestClientPostProcessor] is declared through a non-static factory method on that class; consider declaring it as static instead.
+2026-04-06T12:51:54.735+05:30  WARN 4116 --- [notification-service] [           main] trationDelegate$BeanPostProcessorChecker : Bean 'deferringLoadBalancerInterceptor' of type [org.springframework.cloud.client.loadbalancer.DeferringLoadBalancerInterceptor] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). Is this bean getting eagerly injected into a currently created BeanPostProcessor [lbRestClientPostProcessor]? Check the corresponding BeanPostProcessor declaration and its dependencies.
+2026-04-06T12:51:55.178+05:30  INFO 4116 --- [notification-service] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8083 (http)
+2026-04-06T12:51:55.206+05:30  INFO 4116 --- [notification-service] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-04-06T12:51:55.206+05:30  INFO 4116 --- [notification-service] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.26]
+2026-04-06T12:51:55.346+05:30  INFO 4116 --- [notification-service] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-04-06T12:51:55.346+05:30  INFO 4116 --- [notification-service] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2695 ms
+2026-04-06T12:51:58.027+05:30  INFO 4116 --- [notification-service] [           main] DiscoveryClientOptionalArgsConfiguration : Eureka HTTP Client uses RestTemplate.
+2026-04-06T12:51:58.101+05:30  WARN 4116 --- [notification-service] [           main] iguration$LoadBalancerCaffeineWarnLogger : Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
+2026-04-06T12:51:58.112+05:30  INFO 4116 --- [notification-service] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+2026-04-06T12:51:58.248+05:30  INFO 4116 --- [notification-service] [           main] o.s.c.n.eureka.InstanceInfoFactory       : Setting initial instance status as: STARTING
+2026-04-06T12:51:58.295+05:30  INFO 4116 --- [notification-service] [           main] com.netflix.discovery.DiscoveryClient    : Initializing Eureka in region us-east-1
+2026-04-06T12:51:58.306+05:30  INFO 4116 --- [notification-service] [           main] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T12:51:58.321+05:30  INFO 4116 --- [notification-service] [           main] com.netflix.discovery.DiscoveryClient    : Disable delta property : false
+2026-04-06T12:51:58.321+05:30  INFO 4116 --- [notification-service] [           main] com.netflix.discovery.DiscoveryClient    : Single vip registry refresh property : null
+2026-04-06T12:51:58.321+05:30  INFO 4116 --- [notification-service] [           main] com.netflix.discovery.DiscoveryClient    : Force full registry fetch : false
+2026-04-06T12:51:58.321+05:30  INFO 4116 --- [notification-service] [           main] com.netflix.discovery.DiscoveryClient    : Application is null : false
+2026-04-06T12:51:58.323+05:30  INFO 4116 --- [notification-service] [           main] com.netflix.discovery.DiscoveryClient    : Registered Applications size is zero : true
+2026-04-06T12:51:58.323+05:30  INFO 4116 --- [notification-service] [           main] com.netflix.discovery.DiscoveryClient    : Application version is -1: true
+2026-04-06T12:51:58.323+05:30  INFO 4116 --- [notification-service] [           main] com.netflix.discovery.DiscoveryClient    : Getting all instance registry info from the eureka server
+2026-04-06T12:51:58.883+05:30  INFO 4116 --- [notification-service] [           main] com.netflix.discovery.DiscoveryClient    : The response status is 200
+2026-04-06T12:51:58.887+05:30  INFO 4116 --- [notification-service] [           main] com.netflix.discovery.DiscoveryClient    : Starting heartbeat executor: renew interval is: 30
+2026-04-06T12:51:58.891+05:30  INFO 4116 --- [notification-service] [           main] c.n.discovery.InstanceInfoReplicator     : InstanceInfoReplicator onDemand update allowed rate per min is 4
+2026-04-06T12:51:58.895+05:30  INFO 4116 --- [notification-service] [           main] com.netflix.discovery.DiscoveryClient    : Discovery Client initialized at timestamp 1775460118893 with initial instances count: 2
+2026-04-06T12:51:58.901+05:30  INFO 4116 --- [notification-service] [           main] o.s.c.n.e.s.EurekaServiceRegistry        : Registering application NOTIFICATION-SERVICE with eureka with status UP
+2026-04-06T12:51:58.902+05:30  INFO 4116 --- [notification-service] [           main] com.netflix.discovery.DiscoveryClient    : Saw local status change event StatusChangeEvent [timestamp=1775460118902, current=UP, previous=STARTING]
+2026-04-06T12:51:58.905+05:30  INFO 4116 --- [notification-service] [foReplicator-%d] com.netflix.discovery.DiscoveryClient    : DiscoveryClient_NOTIFICATION-SERVICE/172.28.9.102:notification-service:8083: registering service...
+2026-04-06T12:51:58.940+05:30  INFO 4116 --- [notification-service] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8083 (http) with context path '/'
+2026-04-06T12:51:58.943+05:30  INFO 4116 --- [notification-service] [           main] .s.c.n.e.s.EurekaAutoServiceRegistration : Updating port to 8083
+2026-04-06T12:51:58.971+05:30  INFO 4116 --- [notification-service] [foReplicator-%d] com.netflix.discovery.DiscoveryClient    : DiscoveryClient_NOTIFICATION-SERVICE/172.28.9.102:notification-service:8083 - registration status: 204
+2026-04-06T12:51:59.218+05:30  INFO 4116 --- [notification-service] [           main] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]
+2026-04-06T12:51:59.320+05:30  INFO 4116 --- [notification-service] [           main] o.s.a.r.c.CachingConnectionFactory       : Created new connection: rabbitConnectionFactory#3b170235:0/SimpleConnection@5342032a [delegate=amqp://guest@127.0.0.1:5672/, localPort=54230]
+2026-04-06T12:51:59.491+05:30  INFO 4116 --- [notification-service] [           main] l.m.n.NotificationServiceApplication     : Started NotificationServiceApplication in 7.971 seconds (process running for 9.099)
+2026-04-06T12:56:58.331+05:30  INFO 4116 --- [notification-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:01:58.336+05:30  INFO 4116 --- [notification-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:06:58.342+05:30  INFO 4116 --- [notification-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:11:58.350+05:30  INFO 4116 --- [notification-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:16:58.366+05:30  INFO 4116 --- [notification-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration

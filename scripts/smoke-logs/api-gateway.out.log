@@ -1,0 +1,102 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.2)
+
+2026-04-06T12:51:53.782+05:30  INFO 24132 --- [api-gateway] [           main] l.m.gateway.ApiGatewayApplication        : Starting ApiGatewayApplication using Java 17.0.16 with PID 24132 (F:\Projects\DS Project\api-gateway\target\classes started by ASUS TUF in F:\Projects\DS Project\api-gateway)
+2026-04-06T12:51:53.787+05:30  INFO 24132 --- [api-gateway] [           main] l.m.gateway.ApiGatewayApplication        : No active profile set, falling back to 1 default profile: "default"
+2026-04-06T12:51:55.182+05:30  INFO 24132 --- [api-gateway] [           main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=d986f696-663b-3fd2-bafb-d04f146ba28f
+2026-04-06T12:51:55.284+05:30  WARN 24132 --- [api-gateway] [           main] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.cloud.client.loadbalancer.LoadBalancerAutoConfiguration$DeferringLoadBalancerInterceptorConfig' of type [org.springframework.cloud.client.loadbalancer.LoadBalancerAutoConfiguration$DeferringLoadBalancerInterceptorConfig] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). The currently created BeanPostProcessor [lbRestClientPostProcessor] is declared through a non-static factory method on that class; consider declaring it as static instead.
+2026-04-06T12:51:55.288+05:30  WARN 24132 --- [api-gateway] [           main] trationDelegate$BeanPostProcessorChecker : Bean 'deferringLoadBalancerInterceptor' of type [org.springframework.cloud.client.loadbalancer.DeferringLoadBalancerInterceptor] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). Is this bean getting eagerly injected into a currently created BeanPostProcessor [lbRestClientPostProcessor]? Check the corresponding BeanPostProcessor declaration and its dependencies.
+2026-04-06T12:51:55.291+05:30  WARN 24132 --- [api-gateway] [           main] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.cloud.client.loadbalancer.reactive.LoadBalancerBeanPostProcessorAutoConfiguration' of type [org.springframework.cloud.client.loadbalancer.reactive.LoadBalancerBeanPostProcessorAutoConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). The currently created BeanPostProcessor [loadBalancerWebClientBuilderBeanPostProcessor] is declared through a non-static factory method on that class; consider declaring it as static instead.
+2026-04-06T12:51:55.293+05:30  WARN 24132 --- [api-gateway] [           main] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.cloud.client.loadbalancer.reactive.LoadBalancerBeanPostProcessorAutoConfiguration$ReactorDeferringLoadBalancerFilterConfig' of type [org.springframework.cloud.client.loadbalancer.reactive.LoadBalancerBeanPostProcessorAutoConfiguration$ReactorDeferringLoadBalancerFilterConfig] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). Is this bean getting eagerly injected into a currently created BeanPostProcessor [loadBalancerWebClientBuilderBeanPostProcessor]? Check the corresponding BeanPostProcessor declaration and its dependencies.
+2026-04-06T12:51:55.295+05:30  WARN 24132 --- [api-gateway] [           main] trationDelegate$BeanPostProcessorChecker : Bean 'reactorDeferringLoadBalancerExchangeFilterFunction' of type [org.springframework.cloud.client.loadbalancer.reactive.DeferringLoadBalancerExchangeFilterFunction] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). Is this bean getting eagerly injected into a currently created BeanPostProcessor [loadBalancerWebClientBuilderBeanPostProcessor]? Check the corresponding BeanPostProcessor declaration and its dependencies.
+2026-04-06T12:51:56.830+05:30  INFO 24132 --- [api-gateway] [           main] o.s.c.g.r.RouteDefinitionRouteLocator    : Loaded RoutePredicateFactory [After]
+2026-04-06T12:51:56.830+05:30  INFO 24132 --- [api-gateway] [           main] o.s.c.g.r.RouteDefinitionRouteLocator    : Loaded RoutePredicateFactory [Before]
+2026-04-06T12:51:56.830+05:30  INFO 24132 --- [api-gateway] [           main] o.s.c.g.r.RouteDefinitionRouteLocator    : Loaded RoutePredicateFactory [Between]
+2026-04-06T12:51:56.830+05:30  INFO 24132 --- [api-gateway] [           main] o.s.c.g.r.RouteDefinitionRouteLocator    : Loaded RoutePredicateFactory [Cookie]
+2026-04-06T12:51:56.830+05:30  INFO 24132 --- [api-gateway] [           main] o.s.c.g.r.RouteDefinitionRouteLocator    : Loaded RoutePredicateFactory [Header]
+2026-04-06T12:51:56.832+05:30  INFO 24132 --- [api-gateway] [           main] o.s.c.g.r.RouteDefinitionRouteLocator    : Loaded RoutePredicateFactory [Host]
+2026-04-06T12:51:56.832+05:30  INFO 24132 --- [api-gateway] [           main] o.s.c.g.r.RouteDefinitionRouteLocator    : Loaded RoutePredicateFactory [Method]
+2026-04-06T12:51:56.832+05:30  INFO 24132 --- [api-gateway] [           main] o.s.c.g.r.RouteDefinitionRouteLocator    : Loaded RoutePredicateFactory [Path]
+2026-04-06T12:51:56.832+05:30  INFO 24132 --- [api-gateway] [           main] o.s.c.g.r.RouteDefinitionRouteLocator    : Loaded RoutePredicateFactory [Query]
+2026-04-06T12:51:56.833+05:30  INFO 24132 --- [api-gateway] [           main] o.s.c.g.r.RouteDefinitionRouteLocator    : Loaded RoutePredicateFactory [ReadBody]
+2026-04-06T12:51:56.833+05:30  INFO 24132 --- [api-gateway] [           main] o.s.c.g.r.RouteDefinitionRouteLocator    : Loaded RoutePredicateFactory [RemoteAddr]
+2026-04-06T12:51:56.833+05:30  INFO 24132 --- [api-gateway] [           main] o.s.c.g.r.RouteDefinitionRouteLocator    : Loaded RoutePredicateFactory [XForwardedRemoteAddr]
+2026-04-06T12:51:56.833+05:30  INFO 24132 --- [api-gateway] [           main] o.s.c.g.r.RouteDefinitionRouteLocator    : Loaded RoutePredicateFactory [Weight]
+2026-04-06T12:51:56.834+05:30  INFO 24132 --- [api-gateway] [           main] o.s.c.g.r.RouteDefinitionRouteLocator    : Loaded RoutePredicateFactory [CloudFoundryRouteService]
+2026-04-06T12:51:57.314+05:30  INFO 24132 --- [api-gateway] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+2026-04-06T12:51:57.644+05:30  INFO 24132 --- [api-gateway] [           main] DiscoveryClientOptionalArgsConfiguration : Eureka HTTP Client uses RestTemplate.
+2026-04-06T12:51:57.675+05:30  WARN 24132 --- [api-gateway] [           main] iguration$LoadBalancerCaffeineWarnLogger : Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
+2026-04-06T12:51:57.738+05:30  INFO 24132 --- [api-gateway] [           main] o.s.c.n.eureka.InstanceInfoFactory       : Setting initial instance status as: STARTING
+2026-04-06T12:51:57.770+05:30  INFO 24132 --- [api-gateway] [           main] com.netflix.discovery.DiscoveryClient    : Initializing Eureka in region us-east-1
+2026-04-06T12:51:57.776+05:30  INFO 24132 --- [api-gateway] [           main] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T12:51:57.787+05:30  INFO 24132 --- [api-gateway] [           main] com.netflix.discovery.DiscoveryClient    : Disable delta property : false
+2026-04-06T12:51:57.788+05:30  INFO 24132 --- [api-gateway] [           main] com.netflix.discovery.DiscoveryClient    : Single vip registry refresh property : null
+2026-04-06T12:51:57.788+05:30  INFO 24132 --- [api-gateway] [           main] com.netflix.discovery.DiscoveryClient    : Force full registry fetch : false
+2026-04-06T12:51:57.789+05:30  INFO 24132 --- [api-gateway] [           main] com.netflix.discovery.DiscoveryClient    : Application is null : false
+2026-04-06T12:51:57.789+05:30  INFO 24132 --- [api-gateway] [           main] com.netflix.discovery.DiscoveryClient    : Registered Applications size is zero : true
+2026-04-06T12:51:57.790+05:30  INFO 24132 --- [api-gateway] [           main] com.netflix.discovery.DiscoveryClient    : Application version is -1: true
+2026-04-06T12:51:57.790+05:30  INFO 24132 --- [api-gateway] [           main] com.netflix.discovery.DiscoveryClient    : Getting all instance registry info from the eureka server
+2026-04-06T12:51:58.234+05:30  INFO 24132 --- [api-gateway] [           main] com.netflix.discovery.DiscoveryClient    : The response status is 200
+2026-04-06T12:51:58.234+05:30  INFO 24132 --- [api-gateway] [           main] com.netflix.discovery.DiscoveryClient    : Starting heartbeat executor: renew interval is: 30
+2026-04-06T12:51:58.255+05:30  INFO 24132 --- [api-gateway] [           main] c.n.discovery.InstanceInfoReplicator     : InstanceInfoReplicator onDemand update allowed rate per min is 4
+2026-04-06T12:51:58.259+05:30  INFO 24132 --- [api-gateway] [           main] com.netflix.discovery.DiscoveryClient    : Discovery Client initialized at timestamp 1775460118257 with initial instances count: 2
+2026-04-06T12:51:58.265+05:30  INFO 24132 --- [api-gateway] [           main] o.s.c.n.e.s.EurekaServiceRegistry        : Registering application API-GATEWAY with eureka with status UP
+2026-04-06T12:51:58.265+05:30  INFO 24132 --- [api-gateway] [           main] com.netflix.discovery.DiscoveryClient    : Saw local status change event StatusChangeEvent [timestamp=1775460118265, current=UP, previous=STARTING]
+2026-04-06T12:51:58.269+05:30  INFO 24132 --- [api-gateway] [foReplicator-%d] com.netflix.discovery.DiscoveryClient    : DiscoveryClient_API-GATEWAY/172.28.9.102:api-gateway:8090: registering service...
+2026-04-06T12:51:58.318+05:30  INFO 24132 --- [api-gateway] [foReplicator-%d] com.netflix.discovery.DiscoveryClient    : DiscoveryClient_API-GATEWAY/172.28.9.102:api-gateway:8090 - registration status: 204
+2026-04-06T12:52:00.598+05:30  INFO 24132 --- [api-gateway] [           main] o.s.c.n.e.s.EurekaServiceRegistry        : Unregistering application API-GATEWAY with eureka with status DOWN
+2026-04-06T12:52:00.630+05:30  INFO 24132 --- [api-gateway] [           main] com.netflix.discovery.DiscoveryClient    : Saw local status change event StatusChangeEvent [timestamp=1775460120630, current=DOWN, previous=UP]
+2026-04-06T12:52:00.630+05:30  INFO 24132 --- [api-gateway] [foReplicator-%d] com.netflix.discovery.DiscoveryClient    : DiscoveryClient_API-GATEWAY/172.28.9.102:api-gateway:8090: registering service...
+2026-04-06T12:52:00.630+05:30  WARN 24132 --- [api-gateway] [           main] onfigReactiveWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+2026-04-06T12:52:00.638+05:30  INFO 24132 --- [api-gateway] [           main] com.netflix.discovery.DiscoveryClient    : Shutting down DiscoveryClient ...
+2026-04-06T12:52:00.646+05:30  INFO 24132 --- [api-gateway] [foReplicator-%d] com.netflix.discovery.DiscoveryClient    : DiscoveryClient_API-GATEWAY/172.28.9.102:api-gateway:8090 - registration status: 204
+2026-04-06T12:52:00.648+05:30  INFO 24132 --- [api-gateway] [           main] com.netflix.discovery.DiscoveryClient    : Unregistering ...
+2026-04-06T12:52:00.655+05:30  INFO 24132 --- [api-gateway] [           main] com.netflix.discovery.DiscoveryClient    : DiscoveryClient_API-GATEWAY/172.28.9.102:api-gateway:8090 - deregister  status: 200
+2026-04-06T12:52:00.656+05:30  INFO 24132 --- [api-gateway] [           main] com.netflix.discovery.DiscoveryClient    : Completed shut down of DiscoveryClient
+2026-04-06T12:52:00.673+05:30  INFO 24132 --- [api-gateway] [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-04-06T12:52:00.690+05:30 ERROR 24132 --- [api-gateway] [           main] o.s.b.d.LoggingFailureAnalysisReporter   : 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8090 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8090 or configure this application to listen on another port.
+
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.3.2:run (default-cli) on project api-gateway: Process terminated with exit code: 1 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switc2026-04-06T12:52:25.925+05:30  INFO 37808 --- [api-gateway] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T12:52:28.018+05:30  INFO 37808 --- [api-gateway] [beatExecutor-%d] com.netflix.discovery.DiscoveryClient    : DiscoveryClient_API-GATEWAY/172.28.9.102:api-gateway:8090 - Re-registering apps/API-GATEWAY
+2026-04-06T12:52:28.018+05:30  INFO 37808 --- [api-gateway] [beatExecutor-%d] com.netflix.discovery.DiscoveryClient    : DiscoveryClient_API-GATEWAY/172.28.9.102:api-gateway:8090: registering service...
+2026-04-06T12:52:28.026+05:30  INFO 37808 --- [api-gateway] [beatExecutor-%d] com.netflix.discovery.DiscoveryClient    : DiscoveryClient_API-GATEWAY/172.28.9.102:api-gateway:8090 - registration status: 204
+2026-04-06T12:52:31.915+05:30  WARN 37808 --- [api-gateway] [ctor-http-nio-3] o.s.c.l.core.RoundRobinLoadBalancer      : No servers available for service: auth-service
+2026-04-06T12:52:34.005+05:30  WARN 37808 --- [api-gateway] [ctor-http-nio-3] o.s.c.l.core.RoundRobinLoadBalancer      : No servers available for service: auth-service
+2026-04-06T12:52:36.063+05:30  WARN 37808 --- [api-gateway] [ctor-http-nio-3] o.s.c.l.core.RoundRobinLoadBalancer      : No servers available for service: auth-service
+2026-04-06T12:52:38.105+05:30  WARN 37808 --- [api-gateway] [ctor-http-nio-3] o.s.c.l.core.RoundRobinLoadBalancer      : No servers available for service: auth-service
+2026-04-06T12:52:40.149+05:30  WARN 37808 --- [api-gateway] [ctor-http-nio-3] o.s.c.l.core.RoundRobinLoadBalancer      : No servers available for service: auth-service
+2026-04-06T12:52:42.160+05:30  WARN 37808 --- [api-gateway] [ctor-http-nio-3] o.s.c.l.core.RoundRobinLoadBalancer      : No servers available for service: auth-service
+2026-04-06T12:52:44.166+05:30  WARN 37808 --- [api-gateway] [ctor-http-nio-3] o.s.c.l.core.RoundRobinLoadBalancer      : No servers available for service: auth-service
+2026-04-06T12:52:46.181+05:30  WARN 37808 --- [api-gateway] [ctor-http-nio-3] o.s.c.l.core.RoundRobinLoadBalancer      : No servers available for service: auth-service
+2026-04-06T12:52:48.198+05:30  WARN 37808 --- [api-gateway] [ctor-http-nio-3] o.s.c.l.core.RoundRobinLoadBalancer      : No servers available for service: auth-service
+2026-04-06T12:52:50.209+05:30  WARN 37808 --- [api-gateway] [ctor-http-nio-3] o.s.c.l.core.RoundRobinLoadBalancer      : No servers available for service: auth-service
+2026-04-06T12:52:52.213+05:30  WARN 37808 --- [api-gateway] [ctor-http-nio-3] o.s.c.l.core.RoundRobinLoadBalancer      : No servers available for service: auth-service
+2026-04-06T12:57:25.970+05:30  INFO 37808 --- [api-gateway] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:02:25.973+05:30  INFO 37808 --- [api-gateway] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:07:25.974+05:30  INFO 37808 --- [api-gateway] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:12:25.980+05:30  INFO 37808 --- [api-gateway] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:17:25.985+05:30  INFO 37808 --- [api-gateway] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration

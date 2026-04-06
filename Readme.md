@@ -89,25 +89,6 @@ mvn -pl api-gateway spring-boot:run
 
 Gateway: http://localhost:8090
 
-> Want port 8080 instead? Run gateway with:
-> `mvn -pl api-gateway spring-boot:run -Dspring-boot.run.arguments="--server.port=8080"`
-
-Eureka dashboard: http://localhost:8761
-
----
-
-## 🔎 Swagger / OpenAPI
-
-- Gateway Swagger UI: http://localhost:8090/swagger
-- Auth Service OpenAPI: http://localhost:8081/swagger-ui/index.html
-- Appointment Service OpenAPI: http://localhost:8082/swagger-ui/index.html
-- Doctor Service OpenAPI: http://localhost:8084/swagger-ui/index.html
-- Payment Service OpenAPI: http://localhost:8085/swagger-ui/index.html
-
----
-
-## 🧪 Full Workflow Test (Doctor Verification ➜ Appointment ➜ PayHere Payment ➜ Confirmation)
-
 ### A) Create users
 Register 3 users via gateway:
 - Admin: `role=ADMIN`
@@ -115,45 +96,69 @@ Register 3 users via gateway:
 - Patient: `role=PATIENT`
 
 Endpoints:
-- `POST http://localhost:8090/api/auth/register`
-- `POST http://localhost:8090/api/auth/login`
-
 ### B) Doctor onboarding + admin verification
 1) Doctor creates profile:
-- `POST http://localhost:8090/api/doctors/me/profile`
-- Header: `Authorization: Bearer <doctorToken>`
-
 2) Admin approves:
 - `GET http://localhost:8090/api/admin/doctors/pending`
-- `POST http://localhost:8090/api/admin/doctors/{doctorId}/approve`
-- Header: `Authorization: Bearer <adminToken>`
-
-### C) Patient creates appointment (PENDING_PAYMENT)
-- `POST http://localhost:8090/api/appointments`
 - Header: `Authorization: Bearer <patientToken>`
 
 ### D) Create PayHere payment intent (realistic)
-- `POST http://localhost:8090/api/payments/intents/payhere`
-- Header: `Authorization: Bearer <patientToken>`
+### E) PayHere notify callback
+PayHere will call the notify URL:
+`payment-service` verifies the **MD5 signature** and publishes `payment.completed`, which the `appointment-service` consumes to mark the appointment **CONFIRMED** and publish `appointment.confirmed`.
+
+### F) Verify
+- `GET http://localhost:8090/api/appointments` should show `CONFIRMED`
+- `api-gateway/`, `auth-service/`, `appointment-service/`, `notification-service/`, `doctor-service/`, `payment-service/`, `service-discovery/` – independent microservices (Maven modules)
+  - payment completed
+  - appointment confirmed
+  - doctor verified
 
 This returns:
 - `checkoutUrl` (PayHere sandbox)
 - `formFields` (merchant_id, order_id, amount, currency, notify_url, ...)
 
-> In a real frontend, you render an HTML `<form action="checkoutUrl" method="post">` with these fields.
+- RabbitMQ async events: ✅ (appointment.* / doctor.* / payment.*)
+- PostgreSQL per service: ✅ (auth + appointment + doctor + payment DBs)
 
-### E) PayHere notify callback
-PayHere will call the notify URL:
-- `POST http://localhost:8090/api/payments/callback/payhere`
+### C) Patient creates appointment (PENDING_PAYMENT)
+- Header: `Authorization: Bearer <doctorToken>`
 
-`payment-service` verifies the **MD5 signature** and publishes `payment.completed`, which the `appointment-service` consumes to mark the appointment **CONFIRMED** and publish `appointment.confirmed`.
+---
 
-### F) Verify
-- `GET http://localhost:8090/api/appointments` should show `CONFIRMED`
-- `notification-service` logs should show:
-  - payment completed
-  - appointment confirmed
-  - doctor verified
+## 🔎 Swagger / OpenAPI
+
+- Gateway Swagger UI: http://localhost:8090/swagger
+- Auth Service OpenAPI: http://localhost:8081/swagger-ui/index.html
+- Add telemedicine-service (Jitsi meeting provisioning)
+- Add patient profile/report upload service
+- Add prescriptions service
+- Add AI symptom checker service
+- Persist notification logs + audit trail
+
+---
+
+## 🧪 Quick Workflow Test (Auth ➜ Appointment ➜ Notification)
+
+1) Register a patient:
+- `POST http://localhost:8090/api/auth/register`
+- `POST http://localhost:8090/api/auth/login`
+
+Body:
+```json
+{ "email": "patient1@demo.com", "password": "Passw0rd!", "role": "PATIENT" }
+```
+
+2) Copy `accessToken`, then create appointment:
+- `POST http://localhost:8090/api/appointments`
+- Header: `Authorization: Bearer <token>`
+
+Body:
+```json
+{ "doctorId": 10, "slotTime": "2030-01-01T10:00:00Z" }
+```
+
+3) Watch logs in `notification-service` – it should log the consumed `appointment.created` event.
 
 ---
 
@@ -171,7 +176,7 @@ See `k8s/README.md`.
 
 ## 📦 Repo Structure
 
-- `api-gateway/`, `auth-service/`, `appointment-service/`, `notification-service/`, `doctor-service/`, `payment-service/`, `service-discovery/` – independent microservices (Maven modules)
+- `api-gateway/`, `auth-service/`, `appointment-service/`, `notification-service/`, `service-discovery/` – independent microservices (Maven modules)
 - `docker-compose.yml` – local infrastructure
 - `k8s/` – Kubernetes manifests
 - `docs/` – architecture and workflow diagrams
@@ -182,8 +187,8 @@ See `k8s/README.md`.
 
 - Microservices + API Gateway + Eureka: ✅
 - JWT authentication + RBAC: ✅ (enforced at gateway; BCrypt in auth)
-- RabbitMQ async events: ✅ (appointment.* / doctor.* / payment.*)
-- PostgreSQL per service: ✅ (auth + appointment + doctor + payment DBs)
+- RabbitMQ async events: ✅ (appointment.created/cancelled)
+- PostgreSQL per service: ✅ (separate auth + appointment DBs)
 - Docker Compose: ✅
 - Kubernetes manifests (Deployments, Services, ConfigMaps, Secrets, Ingress): ✅
 - Swagger API specs: ✅
@@ -193,11 +198,10 @@ See `k8s/README.md`.
 
 ## Next Steps (optional to expand)
 
-- Add telemedicine-service (Jitsi meeting provisioning)
-- Add patient profile/report upload service
-- Add prescriptions service
-- Add AI symptom checker service
-- Persist notification logs + audit trail
+- Add `doctor-service` and availability search
+- Add `payment-service` (PayHere sandbox webhook)
+- Add `telemedicine-service` (Jitsi meeting provisioning)
+- Add notification persistence and real email provider integration
 
 ---
 

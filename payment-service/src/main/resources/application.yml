@@ -1,39 +1,39 @@
 server:
-	port: 8085
+  port: 8085
 
 spring:
-	application:
-		name: payment-service
-	datasource:
-		url: jdbc:postgresql://localhost:5435/paymentdb
-		username: payment
-		password: payment
-	jpa:
-		hibernate:
-			ddl-auto: update
-	rabbitmq:
-		host: localhost
-		port: 5672
-		username: guest
-		password: guest
+  application:
+    name: payment-service
+  datasource:
+    url: jdbc:postgresql://localhost:5435/paymentdb
+    username: payment
+    password: payment
+  jpa:
+    hibernate:
+      ddl-auto: update
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
 
 eureka:
-	client:
-		serviceUrl:
-			defaultZone: http://localhost:8761/eureka
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka
 
 app:
-	gateway-base-url: http://localhost:8090
+  gateway-base-url: http://localhost:8090
 
 payhere:
-	sandbox: true
-	merchant-id: "change-me"
-	merchant-secret: "change-me"
-	sandbox-checkout-url: https://sandbox.payhere.lk/pay/checkout
-	live-checkout-url: https://www.payhere.lk/pay/checkout
+  sandbox: true
+  merchant-id: "change-me"
+  merchant-secret: "change-me"
+  sandbox-checkout-url: https://sandbox.payhere.lk/pay/checkout
+  live-checkout-url: https://www.payhere.lk/pay/checkout
 
 management:
-	endpoints:
-		web:
-			exposure:
-				include: health,info
+  endpoints:
+    web:
+      exposure:
+        include: health,info

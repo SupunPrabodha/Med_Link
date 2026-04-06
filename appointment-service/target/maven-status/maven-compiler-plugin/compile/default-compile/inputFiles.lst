@@ -1,6 +1,7 @@
 F:\Projects\DS Project\appointment-service\src\main\java\lk\medilink\appointment\AppointmentServiceApplication.java
 F:\Projects\DS Project\appointment-service\src\main\java\lk\medilink\appointment\domain\Appointment.java
 F:\Projects\DS Project\appointment-service\src\main\java\lk\medilink\appointment\domain\AppointmentStatus.java
+F:\Projects\DS Project\appointment-service\src\main\java\lk\medilink\appointment\messaging\AmqpJsonConfig.java
 F:\Projects\DS Project\appointment-service\src\main\java\lk\medilink\appointment\messaging\AppointmentEvents.java
 F:\Projects\DS Project\appointment-service\src\main\java\lk\medilink\appointment\messaging\PaymentEventHandlers.java
 F:\Projects\DS Project\appointment-service\src\main\java\lk\medilink\appointment\messaging\RabbitConfig.java

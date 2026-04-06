@@ -1,47 +1,183 @@
 $ErrorActionPreference = 'Stop'
 
+function Get-HttpStatusCode {
+  param(
+    [Parameter(Mandatory = $true)][scriptblock]$Request
+  )
+  try {
+    & $Request | Out-Null
+    return 200
+  } catch {
+    if ($_.Exception -and $_.Exception.Response) {
+      try {
+        return [int]$_.Exception.Response.StatusCode
+      } catch {
+        return -1
+      }
+    }
+    return -1
+  }
+}
+
+function Wait-ForHttp {
+  param(
+    [Parameter(Mandatory = $true)][string]$Name,
+    [Parameter(Mandatory = $true)][scriptblock]$Request,
+    [Parameter(Mandatory = $true)][int[]]$OkStatuses,
+    [int]$TimeoutSeconds = 240
+  )
+
+  $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+  while ((Get-Date) -lt $deadline) {
+    $code = Get-HttpStatusCode $Request
+    if ($OkStatuses -contains $code) {
+      return
+    }
+    Start-Sleep -Seconds 2
+  }
+
+  $last = Get-HttpStatusCode $Request
+  throw "Timed out waiting for $Name (last HTTP status: $last)"
+}
+
 Write-Host "[1/6] Starting infrastructure (docker compose)..."
 Set-Location "F:\Projects\DS Project"
 docker compose up -d | Out-Null
 if ($LASTEXITCODE -ne 0) {
-  throw "Docker/Compose failed. Start Docker Desktop (or install Docker Engine), then re-run this script."
+  Write-Host "docker compose up failed; retrying once..."
+  docker compose up -d | Out-Null
+}
+if ($LASTEXITCODE -ne 0) {
+  throw "Docker/Compose failed to start infrastructure. If this is a Docker Hub connectivity issue, try again on a stable network or pre-pull required images."
 }
 
 Write-Host "[2/6] Building (mvn test)..."
 mvn -q test | Out-Null
+if ($LASTEXITCODE -ne 0) {
+  throw "Build failed (mvn test). See Maven output above." 
+}
 
 Write-Host "[3/6] Stopping any old Java processes from previous runs (best-effort)..."
-Get-Process java -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-Get-Process mvn -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+$portsToFree = @(8761, 8090, 8081, 8082, 8083, 8084, 8085)
+foreach ($port in $portsToFree) {
+  try {
+    $pids = Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue |
+      Select-Object -ExpandProperty OwningProcess -Unique
+    foreach ($pid in $pids) {
+      try { Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue } catch { }
+    }
+  } catch { }
+}
+
+$javaProcs = Get-CimInstance Win32_Process -Filter "Name='java.exe'" -ErrorAction SilentlyContinue
+foreach ($p in ($javaProcs | Where-Object {
+  $_.CommandLine -and (
+    $_.CommandLine -match 'lk\\.medilink\\.' -or
+    $_.CommandLine -match 'spring-boot:run'
+  )
+})) {
+  try { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue } catch { }
+}
 
 Write-Host "[4/6] Starting services..."
-Start-Process powershell -WindowStyle Minimized -ArgumentList "-NoProfile -Command cd 'F:\Projects\DS Project'; mvn -q -pl service-discovery spring-boot:run" | Out-Null
-Start-Process powershell -WindowStyle Minimized -ArgumentList "-NoProfile -Command cd 'F:\Projects\DS Project'; mvn -q -pl auth-service spring-boot:run" | Out-Null
-Start-Process powershell -WindowStyle Minimized -ArgumentList "-NoProfile -Command cd 'F:\Projects\DS Project'; mvn -q -pl doctor-service spring-boot:run" | Out-Null
-Start-Process powershell -WindowStyle Minimized -ArgumentList "-NoProfile -Command cd 'F:\Projects\DS Project'; mvn -q -pl appointment-service spring-boot:run" | Out-Null
-Start-Process powershell -WindowStyle Minimized -ArgumentList "-NoProfile -Command cd 'F:\Projects\DS Project'; mvn -q -pl payment-service spring-boot:run" | Out-Null
-Start-Process powershell -WindowStyle Minimized -ArgumentList "-NoProfile -Command cd 'F:\Projects\DS Project'; mvn -q -pl notification-service spring-boot:run" | Out-Null
-Start-Process powershell -WindowStyle Minimized -ArgumentList "-NoProfile -Command cd 'F:\Projects\DS Project'; mvn -q -pl api-gateway spring-boot:run" | Out-Null
+$repoRoot = "F:\Projects\DS Project"
+$logDir = Join-Path $repoRoot "scripts\smoke-logs"
+New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+Get-ChildItem -Path $logDir -File -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+
+function Start-MediLinkModule {
+  param(
+    [Parameter(Mandatory = $true)][string]$Module
+  )
+  $out = Join-Path $logDir "$Module.out.log"
+  $err = Join-Path $logDir "$Module.err.log"
+
+  $cmd = "cd '$repoRoot'; mvn -q -pl $Module spring-boot:run"
+  $proc = Start-Process -FilePath "powershell" -WindowStyle Minimized -PassThru -ArgumentList @(
+    "-NoProfile",
+    "-Command",
+    $cmd
+  ) -RedirectStandardOutput $out -RedirectStandardError $err
+
+  Start-Sleep -Seconds 2
+  if ($proc.HasExited) {
+    throw "Module '$Module' exited immediately. See logs: $out and $err"
+  }
+}
+
+Start-MediLinkModule "service-discovery"
+Start-MediLinkModule "auth-service"
+Start-MediLinkModule "doctor-service"
+Start-MediLinkModule "appointment-service"
+Start-MediLinkModule "payment-service"
+Start-MediLinkModule "notification-service"
+Start-MediLinkModule "api-gateway"
 
 Write-Host "Waiting for gateway to respond..."
+$suffix = ([guid]::NewGuid().ToString('N')).Substring(0, 8)
+$pw = "Passw0rd!"
+
 $gateway = "http://localhost:8090"
-$deadline = (Get-Date).AddSeconds(120)
-$ok = $false
-while((Get-Date) -lt $deadline) {
-  try {
-    $resp = Invoke-WebRequest -UseBasicParsing "$gateway/actuator/health" -TimeoutSec 2
-    if($resp.StatusCode -eq 200) { $ok = $true; break }
-  } catch { }
-  Start-Sleep -Seconds 2
+
+Wait-ForHttp -Name "gateway health" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "$gateway/actuator/health" -TimeoutSec 2
 }
-if(-not $ok) {
-  throw "Gateway health check failed. Check services logs."
+
+Write-Host "Waiting for service discovery + routes to be ready..."
+
+# Wait for Eureka UI to come up (service-discovery module)
+Wait-ForHttp -Name "service-discovery" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "http://localhost:8761" -TimeoutSec 2
+}
+
+# Wait for each service to be healthy on its direct port
+Wait-ForHttp -Name "auth-service health" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "http://localhost:8081/actuator/health" -TimeoutSec 2
+}
+Wait-ForHttp -Name "doctor-service health" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "http://localhost:8084/actuator/health" -TimeoutSec 2
+}
+Wait-ForHttp -Name "appointment-service health" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "http://localhost:8082/actuator/health" -TimeoutSec 2
+}
+Wait-ForHttp -Name "payment-service health" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "http://localhost:8085/actuator/health" -TimeoutSec 2
+}
+
+# Ensure services are registered in Eureka before attempting gateway load-balancing routes
+Wait-ForHttp -Name "eureka auth-service registered" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "http://localhost:8761/eureka/apps/AUTH-SERVICE" -TimeoutSec 2
+}
+Wait-ForHttp -Name "eureka doctor-service registered" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "http://localhost:8761/eureka/apps/DOCTOR-SERVICE" -TimeoutSec 2
+}
+Wait-ForHttp -Name "eureka appointment-service registered" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "http://localhost:8761/eureka/apps/APPOINTMENT-SERVICE" -TimeoutSec 2
+}
+Wait-ForHttp -Name "eureka payment-service registered" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "http://localhost:8761/eureka/apps/PAYMENT-SERVICE" -TimeoutSec 2
+}
+
+# Wait for auth route to become routable through gateway.
+# We accept 400/401/403 because credentials/body may be invalid during readiness probes.
+$probeLoginBody = @{ email = "probe_$suffix@demo.com"; password = "bad" } | ConvertTo-Json
+Wait-ForHttp -Name "auth route" -OkStatuses @(200, 400, 401, 403) -Request {
+  Invoke-WebRequest -UseBasicParsing -Method Post -Uri "$gateway/api/auth/login" -ContentType "application/json" -Body $probeLoginBody -TimeoutSec 2
+}
+
+Wait-ForHttp -Name "doctor route" -OkStatuses @(200, 401, 403, 404) -Request {
+  Invoke-WebRequest -UseBasicParsing "$gateway/api/doctors/ping" -TimeoutSec 2
+}
+
+Wait-ForHttp -Name "appointment route" -OkStatuses @(200, 401, 403, 404) -Request {
+  Invoke-WebRequest -UseBasicParsing "$gateway/api/appointments/ping" -TimeoutSec 2
+}
+
+Wait-ForHttp -Name "payment route" -OkStatuses @(200, 401, 403, 404) -Request {
+  Invoke-WebRequest -UseBasicParsing "$gateway/api/payments/ping" -TimeoutSec 2
 }
 
 Write-Host "[5/6] Running workflow via gateway (admin+doctor verification -> appointment -> payment -> confirmation)..."
-
-$suffix = ([guid]::NewGuid().ToString('N')).Substring(0, 8)
-$pw = "Passw0rd!"
 
 function Register-User($email, $role) {
   $body = @{ email = $email; password = $pw; role = $role } | ConvertTo-Json

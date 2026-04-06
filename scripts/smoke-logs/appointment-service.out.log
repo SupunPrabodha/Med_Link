@@ -1,0 +1,66 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.2)
+
+2026-04-06T12:51:48.555+05:30  INFO 22748 --- [appointment-service] [           main] l.m.a.AppointmentServiceApplication      : Starting AppointmentServiceApplication using Java 17.0.16 with PID 22748 (F:\Projects\DS Project\appointment-service\target\classes started by ASUS TUF in F:\Projects\DS Project\appointment-service)
+2026-04-06T12:51:48.563+05:30  INFO 22748 --- [appointment-service] [           main] l.m.a.AppointmentServiceApplication      : No active profile set, falling back to 1 default profile: "default"
+2026-04-06T12:51:51.846+05:30  INFO 22748 --- [appointment-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-06T12:51:52.179+05:30  INFO 22748 --- [appointment-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 317 ms. Found 1 JPA repository interface.
+2026-04-06T12:51:52.771+05:30  INFO 22748 --- [appointment-service] [           main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=5ecb2b2f-81f7-3418-8086-9bad828e9d75
+2026-04-06T12:51:53.425+05:30  WARN 22748 --- [appointment-service] [           main] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.cloud.client.loadbalancer.LoadBalancerAutoConfiguration$DeferringLoadBalancerInterceptorConfig' of type [org.springframework.cloud.client.loadbalancer.LoadBalancerAutoConfiguration$DeferringLoadBalancerInterceptorConfig] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). The currently created BeanPostProcessor [lbRestClientPostProcessor] is declared through a non-static factory method on that class; consider declaring it as static instead.
+2026-04-06T12:51:53.431+05:30  WARN 22748 --- [appointment-service] [           main] trationDelegate$BeanPostProcessorChecker : Bean 'deferringLoadBalancerInterceptor' of type [org.springframework.cloud.client.loadbalancer.DeferringLoadBalancerInterceptor] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). Is this bean getting eagerly injected into a currently created BeanPostProcessor [lbRestClientPostProcessor]? Check the corresponding BeanPostProcessor declaration and its dependencies.
+2026-04-06T12:51:54.002+05:30  INFO 22748 --- [appointment-service] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8082 (http)
+2026-04-06T12:51:54.023+05:30  INFO 22748 --- [appointment-service] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-04-06T12:51:54.023+05:30  INFO 22748 --- [appointment-service] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.26]
+2026-04-06T12:51:54.177+05:30  INFO 22748 --- [appointment-service] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-04-06T12:51:54.190+05:30  INFO 22748 --- [appointment-service] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 5523 ms
+2026-04-06T12:51:54.807+05:30  INFO 22748 --- [appointment-service] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-04-06T12:51:54.909+05:30  INFO 22748 --- [appointment-service] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.2.Final
+2026-04-06T12:51:54.972+05:30  INFO 22748 --- [appointment-service] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-04-06T12:51:55.554+05:30  INFO 22748 --- [appointment-service] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-06T12:51:55.605+05:30  INFO 22748 --- [appointment-service] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-04-06T12:51:55.873+05:30  INFO 22748 --- [appointment-service] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@6f4029e9
+2026-04-06T12:51:55.876+05:30  INFO 22748 --- [appointment-service] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-04-06T12:51:57.568+05:30  INFO 22748 --- [appointment-service] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-04-06T12:51:57.658+05:30  INFO 22748 --- [appointment-service] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-06T12:51:59.185+05:30  WARN 22748 --- [appointment-service] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-04-06T12:52:01.149+05:30  INFO 22748 --- [appointment-service] [           main] DiscoveryClientOptionalArgsConfiguration : Eureka HTTP Client uses RestTemplate.
+2026-04-06T12:52:01.272+05:30  WARN 22748 --- [appointment-service] [           main] iguration$LoadBalancerCaffeineWarnLogger : Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
+2026-04-06T12:52:01.297+05:30  INFO 22748 --- [appointment-service] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+2026-04-06T12:52:01.477+05:30  INFO 22748 --- [appointment-service] [           main] o.s.c.n.eureka.InstanceInfoFactory       : Setting initial instance status as: STARTING
+2026-04-06T12:52:01.519+05:30  INFO 22748 --- [appointment-service] [           main] com.netflix.discovery.DiscoveryClient    : Initializing Eureka in region us-east-1
+2026-04-06T12:52:01.525+05:30  INFO 22748 --- [appointment-service] [           main] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T12:52:01.540+05:30  INFO 22748 --- [appointment-service] [           main] com.netflix.discovery.DiscoveryClient    : Disable delta property : false
+2026-04-06T12:52:01.540+05:30  INFO 22748 --- [appointment-service] [           main] com.netflix.discovery.DiscoveryClient    : Single vip registry refresh property : null
+2026-04-06T12:52:01.540+05:30  INFO 22748 --- [appointment-service] [           main] com.netflix.discovery.DiscoveryClient    : Force full registry fetch : false
+2026-04-06T12:52:01.540+05:30  INFO 22748 --- [appointment-service] [           main] com.netflix.discovery.DiscoveryClient    : Application is null : false
+2026-04-06T12:52:01.540+05:30  INFO 22748 --- [appointment-service] [           main] com.netflix.discovery.DiscoveryClient    : Registered Applications size is zero : true
+2026-04-06T12:52:01.540+05:30  INFO 22748 --- [appointment-service] [           main] com.netflix.discovery.DiscoveryClient    : Application version is -1: true
+2026-04-06T12:52:01.540+05:30  INFO 22748 --- [appointment-service] [           main] com.netflix.discovery.DiscoveryClient    : Getting all instance registry info from the eureka server
+2026-04-06T12:52:01.980+05:30  INFO 22748 --- [appointment-service] [           main] com.netflix.discovery.DiscoveryClient    : The response status is 200
+2026-04-06T12:52:02.015+05:30  INFO 22748 --- [appointment-service] [           main] com.netflix.discovery.DiscoveryClient    : Starting heartbeat executor: renew interval is: 30
+2026-04-06T12:52:02.017+05:30  INFO 22748 --- [appointment-service] [           main] c.n.discovery.InstanceInfoReplicator     : InstanceInfoReplicator onDemand update allowed rate per min is 4
+2026-04-06T12:52:02.019+05:30  INFO 22748 --- [appointment-service] [           main] com.netflix.discovery.DiscoveryClient    : Discovery Client initialized at timestamp 1775460122019 with initial instances count: 3
+2026-04-06T12:52:02.028+05:30  INFO 22748 --- [appointment-service] [           main] o.s.c.n.e.s.EurekaServiceRegistry        : Registering application APPOINTMENT-SERVICE with eureka with status UP
+2026-04-06T12:52:02.028+05:30  INFO 22748 --- [appointment-service] [           main] com.netflix.discovery.DiscoveryClient    : Saw local status change event StatusChangeEvent [timestamp=1775460122028, current=UP, previous=STARTING]
+2026-04-06T12:52:02.028+05:30  INFO 22748 --- [appointment-service] [foReplicator-%d] com.netflix.discovery.DiscoveryClient    : DiscoveryClient_APPOINTMENT-SERVICE/172.28.9.102:appointment-service:8082: registering service...
+2026-04-06T12:52:02.062+05:30  INFO 22748 --- [appointment-service] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8082 (http) with context path '/'
+2026-04-06T12:52:02.062+05:30  INFO 22748 --- [appointment-service] [           main] .s.c.n.e.s.EurekaAutoServiceRegistration : Updating port to 8082
+2026-04-06T12:52:02.083+05:30  INFO 22748 --- [appointment-service] [foReplicator-%d] com.netflix.discovery.DiscoveryClient    : DiscoveryClient_APPOINTMENT-SERVICE/172.28.9.102:appointment-service:8082 - registration status: 204
+2026-04-06T12:52:02.336+05:30  INFO 22748 --- [appointment-service] [           main] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]
+2026-04-06T12:52:02.412+05:30  INFO 22748 --- [appointment-service] [           main] o.s.a.r.c.CachingConnectionFactory       : Created new connection: rabbitConnectionFactory#313c3cb:0/SimpleConnection@161a3085 [delegate=amqp://guest@127.0.0.1:5672/, localPort=54245]
+2026-04-06T12:52:02.528+05:30  INFO 22748 --- [appointment-service] [           main] l.m.a.AppointmentServiceApplication      : Started AppointmentServiceApplication in 15.405 seconds (process running for 16.402)
+2026-04-06T12:52:02.820+05:30  INFO 22748 --- [appointment-service] [nio-8082-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-04-06T12:52:02.849+05:30  INFO 22748 --- [appointment-service] [nio-8082-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-04-06T12:52:02.853+05:30  INFO 22748 --- [appointment-service] [nio-8082-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 0 ms
+2026-04-06T12:57:01.553+05:30  INFO 22748 --- [appointment-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:02:01.554+05:30  INFO 22748 --- [appointment-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:07:01.569+05:30  INFO 22748 --- [appointment-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:12:01.576+05:30  INFO 22748 --- [appointment-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:17:01.580+05:30  INFO 22748 --- [appointment-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration

@@ -1,5 +1,6 @@
 F:\Projects\DS Project\payment-service\src\main\java\lk\medilink\payment\domain\Payment.java
 F:\Projects\DS Project\payment-service\src\main\java\lk\medilink\payment\domain\PaymentStatus.java
+F:\Projects\DS Project\payment-service\src\main\java\lk\medilink\payment\messaging\AmqpJsonConfig.java
 F:\Projects\DS Project\payment-service\src\main\java\lk\medilink\payment\messaging\PaymentEvents.java
 F:\Projects\DS Project\payment-service\src\main\java\lk\medilink\payment\messaging\RabbitConfig.java
 F:\Projects\DS Project\payment-service\src\main\java\lk\medilink\payment\PaymentPropertiesConfig.java

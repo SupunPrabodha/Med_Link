@@ -23,12 +23,12 @@ public class AdminDoctorController {
 	}
 
 	@PostMapping("/{doctorId}/approve")
-	public DoctorProfile approve(@PathVariable Long doctorId) {
+	public DoctorProfile approve(@PathVariable("doctorId") Long doctorId) {
 		return service.approve(doctorId);
 	}
 
 	@PostMapping("/{doctorId}/reject")
-	public DoctorProfile reject(@PathVariable Long doctorId, @Valid @RequestBody RejectDoctorRequest req) {
+	public DoctorProfile reject(@PathVariable("doctorId") Long doctorId, @Valid @RequestBody RejectDoctorRequest req) {
 		return service.reject(doctorId, req.reason());
 	}
 }
