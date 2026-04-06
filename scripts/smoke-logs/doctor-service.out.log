@@ -64,3 +64,9 @@
 2026-04-06T13:06:59.314+05:30  INFO 20776 --- [doctor-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
 2026-04-06T13:11:59.315+05:30  INFO 20776 --- [doctor-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
 2026-04-06T13:16:59.318+05:30  INFO 20776 --- [doctor-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:21:59.321+05:30  INFO 20776 --- [doctor-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:26:59.360+05:30  INFO 20776 --- [doctor-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:31:59.368+05:30  INFO 20776 --- [doctor-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:36:59.408+05:30  INFO 20776 --- [doctor-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:41:59.419+05:30  INFO 20776 --- [doctor-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-06T13:46:59.457+05:30  INFO 20776 --- [doctor-service] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
