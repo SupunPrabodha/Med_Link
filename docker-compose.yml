@@ -43,6 +43,17 @@ services:
     volumes:
       - pg_payment_data:/var/lib/postgresql/data
 
+  postgres-patient:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: patientdb
+      POSTGRES_USER: patient
+      POSTGRES_PASSWORD: patient
+    ports:
+      - "5436:5432"
+    volumes:
+      - pg_patient_data:/var/lib/postgresql/data
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -54,3 +65,4 @@ volumes:
   pg_appt_data:
   pg_doctor_data:
   pg_payment_data:
+  pg_patient_data:

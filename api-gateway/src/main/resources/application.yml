@@ -17,6 +17,14 @@ spring:
           uri: lb://auth-service
           predicates:
             - Path=/api/auth/**
+        - id: patient-service
+          uri: lb://patient-service
+          predicates:
+            - Path=/api/patients/**
+          filters:
+            - name: JwtAuthGatewayFilter
+              args:
+                requiredRoles: ["PATIENT","ADMIN"]
         - id: payhere-callback
           uri: lb://payment-service
           predicates:
