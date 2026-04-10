@@ -24,6 +24,7 @@ This repository contains a **marks-aligned, runnable microservices skeleton** de
 | `service-discovery` | 8761 | Eureka server for service registration |
 | `api-gateway` | 8090 | Entry point, routing, JWT validation + RBAC |
 | `auth-service` | 8081 | Register/login, issues JWT |
+| `patient-service` | 8086 | Patient service scaffold (env + DB + ping endpoint) |
 | `appointment-service` | 8082 | Appointment CRUD, publishes RabbitMQ events |
 | `notification-service` | 8083 | Consumes events, logs "email/SMS" notifications |
 | `doctor-service` | 8084 | Doctor onboarding + admin verification |
@@ -34,6 +35,7 @@ This repository contains a **marks-aligned, runnable microservices skeleton** de
 - PostgreSQL for Appointment (`appointmentdb`) on host port `5433`
 - PostgreSQL for Doctor (`doctordb`) on host port `5434`
 - PostgreSQL for Payments (`paymentdb`) on host port `5435`
+- PostgreSQL for Patient (`patientdb`) on host port `5436`
 - RabbitMQ + Management UI on ports `5672` and `15672`
 
 ---
@@ -59,11 +61,34 @@ This repository contains a **marks-aligned, runnable microservices skeleton** de
 
 ## 🚀 How to Run (Local)
 
+### Option 1 (recommended for marking): Run everything with Docker Compose
+
+This starts **all infrastructure + all microservices** as containers.
+
+```powershell
+cd "F:\Projects\DS Project"
+docker compose up -d --build
+```
+
+Key URLs:
+- Frontend UI: http://localhost:5173
+- Eureka: http://localhost:8761
+- Gateway: http://localhost:8090
+- Gateway Swagger UI: http://localhost:8090/swagger
+- RabbitMQ UI: http://localhost:15672 (guest/guest)
+
+Stop:
+```powershell
+docker compose down
+```
+
+### Option 2 (dev): Start infrastructure only, run services via Maven
+
 ### 1) Start infrastructure (Postgres + RabbitMQ)
 
 ```powershell
 cd "F:\Projects\DS Project"
-docker compose up -d
+docker compose up -d postgres-auth postgres-appointment postgres-doctor postgres-payment postgres-patient rabbitmq
 ```
 
 RabbitMQ UI: http://localhost:15672 (guest/guest)
@@ -100,7 +125,7 @@ Endpoints:
 1) Doctor creates profile:
 2) Admin approves:
 - `GET http://localhost:8090/api/admin/doctors/pending`
-- Header: `Authorization: Bearer <patientToken>`
+- Header: `Authorization: Bearer <adminToken>`
 
 ### D) Create PayHere payment intent (realistic)
 ### E) PayHere notify callback
@@ -122,7 +147,7 @@ This returns:
 - PostgreSQL per service: ✅ (auth + appointment + doctor + payment DBs)
 
 ### C) Patient creates appointment (PENDING_PAYMENT)
-- Header: `Authorization: Bearer <doctorToken>`
+- Header: `Authorization: Bearer <patientToken>`
 
 ---
 
@@ -147,6 +172,13 @@ This returns:
 Body:
 ```json
 { "email": "patient1@demo.com", "password": "Passw0rd!", "role": "PATIENT" }
+```
+
+Note (Windows/PowerShell): `curl` quoting can easily mangle JSON. If you see `401` with `WWW-Authenticate: Basic realm=\"Realm\"` or JSON parse errors in logs, use PowerShell instead:
+
+```powershell
+$body = @{ email = 'patient1@demo.com'; password = 'Passw0rd!'; role = 'PATIENT' } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri 'http://localhost:8090/api/auth/register' -ContentType 'application/json' -Body $body
 ```
 
 2) Copy `accessToken`, then create appointment:

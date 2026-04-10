@@ -30,5 +30,13 @@ bin/
 **/target/
 *.class
 
+### Node / Frontend build ###
+**/node_modules/
+**/dist/
+**/.vite/
+**/.eslintcache
+.env
+.env.*
+
 ### Mac OS ###
 .DS_Store

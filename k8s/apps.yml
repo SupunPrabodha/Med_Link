@@ -236,8 +236,68 @@ apiVersion: v1
 kind: Service
 metadata:
   name: api-gateway
+  namespace: medilink
+spec:
+  selector:
+    app: api-gateway
+  ports:
     - port: 8090
       targetPort: 8090
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: patient-service
+  namespace: medilink
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: patient-service
+  template:
+    metadata:
+      labels:
+        app: patient-service
+    spec:
+      containers:
+        - name: patient-service
+          image: medilink/patient-service:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8086
+          env:
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: medilink-config
+                  key: EUREKA_URL
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: medilink-secrets
+                  key: PATIENT_DB_URL
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: medilink-secrets
+                  key: PATIENT_DB_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: medilink-secrets
+                  key: PATIENT_DB_PASS
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: patient-service
+  namespace: medilink
+spec:
+  selector:
+    app: patient-service
+  ports:
+    - port: 8086
+      targetPort: 8086
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -368,7 +428,3 @@ spec:
   ports:
     - port: 8085
       targetPort: 8085
-    app: api-gateway
-  ports:
-    - port: 8080
-      targetPort: 8080

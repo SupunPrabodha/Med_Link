@@ -1,9 +1,0 @@
-F:\Projects\DS Project\services\appointment-service\src\main\java\lk\medilink\appointment\AppointmentServiceApplication.java
-F:\Projects\DS Project\services\appointment-service\src\main\java\lk\medilink\appointment\domain\Appointment.java
-F:\Projects\DS Project\services\appointment-service\src\main\java\lk\medilink\appointment\domain\AppointmentStatus.java
-F:\Projects\DS Project\services\appointment-service\src\main\java\lk\medilink\appointment\messaging\AppointmentEvents.java
-F:\Projects\DS Project\services\appointment-service\src\main\java\lk\medilink\appointment\messaging\RabbitConfig.java
-F:\Projects\DS Project\services\appointment-service\src\main\java\lk\medilink\appointment\repo\AppointmentRepository.java
-F:\Projects\DS Project\services\appointment-service\src\main\java\lk\medilink\appointment\service\AppointmentAppService.java
-F:\Projects\DS Project\services\appointment-service\src\main\java\lk\medilink\appointment\web\AppointmentController.java
-F:\Projects\DS Project\services\appointment-service\src\main\java\lk\medilink\appointment\web\dto\CreateAppointmentRequest.java

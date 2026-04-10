@@ -205,3 +205,56 @@ spec:
   ports:
     - port: 5432
       targetPort: 5432
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-patient
+  namespace: medilink
+spec:
+  serviceName: postgres-patient
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-patient
+  template:
+    metadata:
+      labels:
+        app: postgres-patient
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          env:
+            - name: POSTGRES_DB
+              value: patientdb
+            - name: POSTGRES_USER
+              value: patient
+            - name: POSTGRES_PASSWORD
+              value: patient
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-patient
+  namespace: medilink
+spec:
+  selector:
+    app: postgres-patient
+  ports:
+    - port: 5432
+      targetPort: 5432
