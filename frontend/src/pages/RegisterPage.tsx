@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { formatApiError } from '../lib/formatApiError'
 import { Button, Card, Input, Label } from '../ui/primitives'
 
 type Role = 'PATIENT' | 'DOCTOR' | 'ADMIN'
@@ -23,7 +24,7 @@ export function RegisterPage() {
       await register(email.trim(), password, role)
       nav(role === 'DOCTOR' ? '/app/doctor/profile' : role === 'ADMIN' ? '/app/admin/doctors' : '/app')
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Registration failed')
+      setError(formatApiError(err, 'Registration failed'))
     } finally {
       setLoading(false)
     }
@@ -34,7 +35,7 @@ export function RegisterPage() {
       <div className="mx-auto flex max-w-md flex-col gap-4 px-4 py-12">
         <div>
           <div className="text-sm font-semibold text-slate-900">MediLink LK</div>
-          <div className="text-xs text-slate-500">Create an account for marking workflows</div>
+          <div className="text-xs text-slate-500">Create your account</div>
         </div>
 
         <Card>
@@ -55,17 +56,18 @@ export function RegisterPage() {
               <Label>Role</Label>
               <div className="mt-1">
                 <select
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
                   value={role}
                   onChange={(e) => setRole(e.target.value as Role)}
+                  disabled={loading}
                 >
-                  <option value="PATIENT">PATIENT</option>
-                  <option value="DOCTOR">DOCTOR</option>
-                  <option value="ADMIN">ADMIN</option>
+                  <option value="PATIENT">Patient</option>
+                  <option value="DOCTOR">Doctor</option>
+                  <option value="ADMIN">Admin (demo)</option>
                 </select>
               </div>
               <div className="mt-2 text-xs text-slate-500">
-                Admin role is for demonstration/marking only.
+                Doctor accounts require admin verification. Admin accounts are for demo use only.
               </div>
             </div>
 

@@ -56,10 +56,23 @@ export function PaymentsPage() {
         return
       }
 
+      const cleanedAmount = amount.trim()
+      const parsedAmount = Number.parseFloat(cleanedAmount)
+      if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+        setError('Amount must be a positive number')
+        return
+      }
+
+      const cleanedCurrency = currency.trim().toUpperCase()
+      if (!cleanedCurrency) {
+        setError('Currency is required')
+        return
+      }
+
       const res = await api.post<PaymentIntentResponse>('/payments/intents/payhere', {
         appointmentId: parsedAppointmentId,
-        amount: amount,
-        currency: currency,
+        amount: cleanedAmount,
+        currency: cleanedCurrency,
       })
       setIntent(res.data)
     } catch (err: any) {
@@ -79,7 +92,7 @@ export function PaymentsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="text-sm font-semibold text-slate-900">Payments</div>
-            <div className="text-xs text-slate-500">Create a PayHere-style payment intent</div>
+            <div className="text-xs text-slate-500">Pay securely for your consultation</div>
           </div>
           <Badge>Patient/Admin role</Badge>
         </div>
@@ -88,7 +101,7 @@ export function PaymentsPage() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <div className="text-xs font-semibold text-slate-700">Select an appointment</div>
-              <div className="text-xs text-slate-500">Choose a PENDING_PAYMENT appointment from the list</div>
+              <div className="text-xs text-slate-500">Only PENDING_PAYMENT appointments can be paid</div>
             </div>
             <Button variant="secondary" onClick={loadAppointments} disabled={loadingAppointments}>
               {loadingAppointments ? 'Loading…' : 'Refresh'}
@@ -182,28 +195,38 @@ export function PaymentsPage() {
 
       {intent && (
         <Card>
-          <div className="text-sm font-semibold text-slate-900">Checkout</div>
-          <div className="mt-2 text-xs text-slate-500">Open the checkout URL or submit the form fields.</div>
-
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <a className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white" href={intent.checkoutUrl} target="_blank" rel="noreferrer">
-              Open PayHere checkout
-            </a>
-            <Badge className="font-mono">{intent.checkoutUrl}</Badge>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-slate-900">PayHere checkout</div>
+              <div className="mt-1 text-xs text-slate-500">A new tab will open to complete your payment.</div>
+            </div>
+            {appointmentId.trim() && <Badge className="font-mono">Appointment #{appointmentId}</Badge>}
           </div>
 
-          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <div className="text-xs font-semibold text-slate-700">Form fields</div>
-            <pre className="mt-2 overflow-x-auto text-xs text-slate-800">{JSON.stringify(intent.formFields, null, 2)}</pre>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div className="text-xs text-slate-500">Amount</div>
+              <div className="mt-1 text-sm font-semibold text-slate-900">{amount.trim() || '—'}</div>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div className="text-xs text-slate-500">Currency</div>
+              <div className="mt-1 text-sm font-semibold text-slate-900">{currency.trim().toUpperCase() || '—'}</div>
+            </div>
           </div>
+
+          <form className="mt-4 flex flex-wrap items-center gap-2" method="POST" action={intent.checkoutUrl} target="_blank">
+            {Object.entries(intent.formFields).map(([k, v]) => (
+              <input key={k} type="hidden" name={k} value={v} />
+            ))}
+            <Button type="submit">Pay now</Button>
+            <Button variant="secondary" type="button" onClick={() => setIntent(null)}>
+              Close
+            </Button>
+          </form>
+
+          <div className="mt-3 text-xs text-slate-500">After payment, refresh Appointments to see the updated status.</div>
         </Card>
       )}
-
-      <Card>
-        <div className="text-xs text-slate-500">
-          API: <span className="font-mono">POST /api/payments/intents/payhere</span>
-        </div>
-      </Card>
     </div>
   )
 }

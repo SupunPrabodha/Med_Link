@@ -24,7 +24,7 @@ This repository contains a **marks-aligned, runnable microservices skeleton** de
 | `service-discovery` | 8761 | Eureka server for service registration |
 | `api-gateway` | 8090 | Entry point, routing, JWT validation + RBAC |
 | `auth-service` | 8081 | Register/login, issues JWT |
-| `patient-service` | 8086 | Patient service scaffold (env + DB + ping endpoint) |
+| `patient-service` | 8086 | Patient profile + medical reports (upload/list/download/delete) |
 | `appointment-service` | 8082 | Appointment CRUD, publishes RabbitMQ events |
 | `notification-service` | 8083 | Consumes events, logs "email/SMS" notifications |
 | `doctor-service` | 8084 | Doctor onboarding + admin verification |

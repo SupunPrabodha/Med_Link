@@ -70,7 +70,7 @@ export function DoctorProfilePage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="text-sm font-semibold text-slate-900">My doctor profile</div>
-            <div className="text-xs text-slate-500">Submit details for admin verification</div>
+            <div className="text-xs text-slate-500">Manage your profile and submit for verification</div>
           </div>
           {profile && <Badge>{profile.status}</Badge>}
         </div>
@@ -124,12 +124,6 @@ export function DoctorProfilePage() {
           <Button variant="secondary" onClick={load}>
             Refresh
           </Button>
-        </div>
-      </Card>
-
-      <Card>
-        <div className="text-xs text-slate-500">
-          API: <span className="font-mono">POST /api/doctors/me/profile</span>, <span className="font-mono">GET /api/doctors/me/profile</span>
         </div>
       </Card>
     </div>

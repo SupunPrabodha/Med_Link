@@ -90,7 +90,7 @@ export function AdminDoctorsPage() {
                 <tr key={d.id} className="hover:bg-slate-50">
                   <td className="px-3 py-3">
                     <div className="font-medium text-slate-900">{d.fullName}</div>
-                    <div className="font-mono text-xs text-slate-600">UID {d.userId}</div>
+                    <div className="font-mono text-xs text-slate-600">User ID {d.userId}</div>
                   </td>
                   <td className="px-3 py-3 text-slate-700">{d.specialization}</td>
                   <td className="px-3 py-3">

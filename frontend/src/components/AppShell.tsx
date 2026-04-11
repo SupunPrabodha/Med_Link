@@ -10,12 +10,13 @@ type NavItem = {
 
 const items: NavItem[] = [
 	{ label: 'Dashboard', to: '/app/dashboard' },
+	{ label: 'My Profile', to: '/app/patient/profile', show: (roles) => roles.includes('PATIENT') || roles.includes('ADMIN') },
 	{ label: 'Doctors', to: '/app/doctors' },
 	{ label: 'Appointments', to: '/app/appointments', show: (roles) => roles.includes('PATIENT') || roles.includes('ADMIN') },
 	{ label: 'Payments', to: '/app/payments', show: (roles) => roles.includes('PATIENT') || roles.includes('ADMIN') },
-	{ label: 'My Doctor Profile', to: '/app/doctor/profile', show: (roles) => roles.includes('DOCTOR') },
-	{ label: 'Verify Doctors', to: '/app/admin/doctors', show: (roles) => roles.includes('ADMIN') },
-	{ label: 'System Status', to: '/app/status' },
+	{ label: 'Doctor Profile', to: '/app/doctor/profile', show: (roles) => roles.includes('DOCTOR') },
+	{ label: 'Doctor Verification', to: '/app/admin/doctors', show: (roles) => roles.includes('ADMIN') },
+	{ label: 'Platform Status', to: '/app/status', show: (roles) => roles.includes('ADMIN') },
 ]
 
 export function AppShell() {

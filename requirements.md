@@ -10,7 +10,7 @@ Implemented as runnable services (see `Readme.md` for ports and workflow):
 - Service Discovery (Eureka)
 - API Gateway (routing + JWT validation + basic RBAC)
 - Auth Service (register/login, issues JWT)
-yes, rubric requires full Dockerized run- Patient Service (scaffold only: service module + DB + gateway route)
+- Patient Service (profile + medical reports upload/list/download/delete)
 - Doctor Service (onboarding + admin verification)
 - Appointment Service (CRUD + appointment lifecycle events)
 - Payment Service (PayHere-style intent + notify callback signature validation)
@@ -26,7 +26,6 @@ Implemented UI (minimal, marker-friendly):
     - System status page (health checks)
 
 Not implemented in this skeleton (kept as **target scope / future extensions** in this document):
-- Patient features (profile, medical reports, medical history)
 - Telemedicine (Jitsi)
 - Prescriptions
 - AI symptom checker

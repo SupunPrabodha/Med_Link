@@ -24,11 +24,16 @@ export function SystemStatusPage() {
     for (const p of pings) {
       try {
         if (p.url === '/auth/login') {
-          out[p.name] = 'OK (endpoint reachable)'
+          out[p.name] = 'OK'
           continue
         }
         const res = p.url.startsWith('/actuator/') ? await axios.get(p.url) : await api.get(p.url)
-        out[p.name] = typeof res.data === 'string' ? res.data : JSON.stringify(res.data)
+        if (p.url === '/actuator/health') {
+          const status = (res.data as any)?.status
+          out[p.name] = typeof status === 'string' ? status : 'OK'
+        } else {
+          out[p.name] = 'OK'
+        }
       } catch (err: any) {
         out[p.name] = err?.response?.status ? `HTTP ${err.response.status}` : 'Error'
       }
@@ -46,8 +51,8 @@ export function SystemStatusPage() {
     <Card>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-sm font-semibold text-slate-900">System status</div>
-          <div className="text-xs text-slate-500">Quick health/ping checks through the gateway</div>
+          <div className="text-sm font-semibold text-slate-900">Platform status</div>
+          <div className="text-xs text-slate-500">Service health checks</div>
         </div>
         <Button variant="secondary" onClick={run} disabled={loading}>
           {loading ? 'Checking…' : 'Re-check'}

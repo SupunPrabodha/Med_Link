@@ -8,6 +8,10 @@ spring:
     url: jdbc:postgresql://localhost:5436/patientdb
     username: patient
     password: patient
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   jpa:
     hibernate:
       ddl-auto: update
@@ -22,3 +26,4 @@ management:
     web:
       exposure:
         include: health,info
+

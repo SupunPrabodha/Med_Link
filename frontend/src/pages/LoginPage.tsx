@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { formatApiError } from '../lib/formatApiError'
 import { Button, Card, Input, Label } from '../ui/primitives'
 
 export function LoginPage() {
@@ -19,7 +20,7 @@ export function LoginPage() {
       await login(email.trim(), password)
       nav('/app')
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Login failed')
+      setError(formatApiError(err, 'Login failed'))
     } finally {
       setLoading(false)
     }
@@ -30,7 +31,7 @@ export function LoginPage() {
       <div className="mx-auto flex max-w-md flex-col gap-4 px-4 py-12">
         <div>
           <div className="text-sm font-semibold text-slate-900">MediLink LK</div>
-          <div className="text-xs text-slate-500">Sign in to continue</div>
+          <div className="text-xs text-slate-500">Sign in to your account</div>
         </div>
 
         <Card>

@@ -7,7 +7,7 @@ export function LandingPage() {
 			<div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-12">
 				<div>
 					<div className="text-sm font-semibold text-slate-900">MediLink LK</div>
-					<div className="mt-1 text-xs text-slate-500">Microservices demo (gateway + auth + appointments + doctor + patient + payment)</div>
+					<div className="mt-1 text-xs text-slate-500">Book appointments with verified doctors and pay online.</div>
 				</div>
 
 				<Card>
@@ -29,8 +29,8 @@ export function LandingPage() {
 
 				<div className="grid gap-4 md:grid-cols-2">
 					<Card>
-						<div className="text-sm font-semibold text-slate-900">Web</div>
-						<div className="mt-2 text-sm text-slate-700">Frontend is served on <span className="font-mono text-xs">:5173</span>.</div>
+						<div className="text-sm font-semibold text-slate-900">For patients</div>
+						<div className="mt-2 text-sm text-slate-700">Browse verified doctors, create appointments, and pay securely.</div>
 						<div className="mt-4">
 							<Link to="/app">
 								<Button variant="ghost">Go to app</Button>
@@ -38,10 +38,8 @@ export function LandingPage() {
 						</div>
 					</Card>
 					<Card>
-						<div className="text-sm font-semibold text-slate-900">Notes</div>
-						<div className="mt-2 text-sm text-slate-700">
-							API calls go through the gateway under <span className="font-mono text-xs">/api</span> (proxied by Nginx).
-						</div>
+						<div className="text-sm font-semibold text-slate-900">For doctors & admins</div>
+						<div className="mt-2 text-sm text-slate-700">Doctors can submit profiles for verification. Admins can verify registrations and oversee workflows.</div>
 					</Card>
 				</div>
 			</div>
