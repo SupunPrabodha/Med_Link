@@ -70,6 +70,11 @@ cd "F:\Projects\DS Project"
 docker compose up -d --build
 ```
 
+Optional configuration (host env vars or a `.env` file next to `docker-compose.yml`):
+- `PAYHERE_MERCHANT_ID` (defaults to `1211149`)
+- `PAYHERE_MERCHANT_SECRET` (defaults to `change-me`)
+- `APP_GATEWAY_BASE_URL` (defaults to `http://api-gateway:8090` inside Docker)
+
 Key URLs:
 - Frontend UI: http://localhost:5173
 - Eureka: http://localhost:8761
@@ -81,6 +86,20 @@ Stop:
 ```powershell
 docker compose down
 ```
+
+### ✅ One-command workflow verification (recommended)
+
+This script runs a complete marker-friendly flow through the **gateway**:
+`ADMIN + DOCTOR + PATIENT` registration → doctor profile → admin approval → appointment → PayHere intent → **signed notify callback** → appointment becomes **CONFIRMED**.
+
+```powershell
+cd "F:\Projects\DS Project"
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke-test.ps1
+```
+
+Notes:
+- By default the smoke test does **not** force Docker rebuilds (more stable on lab machines). To force rebuilds set `SMOKE_BUILD=1`.
+- If you override `PAYHERE_MERCHANT_SECRET` for Compose, also set the same value when running the smoke test (so it can generate a valid `md5sig`).
 
 ### Option 2 (dev): Start infrastructure only, run services via Maven
 
@@ -165,32 +184,14 @@ This returns:
 
 ## 🧪 Quick Workflow Test (Auth ➜ Appointment ➜ Notification)
 
-1) Register a patient:
-- `POST http://localhost:8090/api/auth/register`
-- `POST http://localhost:8090/api/auth/login`
-
-Body:
-```json
-{ "email": "patient1@demo.com", "password": "Passw0rd!", "role": "PATIENT" }
-```
-
-Note (Windows/PowerShell): `curl` quoting can easily mangle JSON. If you see `401` with `WWW-Authenticate: Basic realm=\"Realm\"` or JSON parse errors in logs, use PowerShell instead:
+Use the automated script for a full end-to-end verification:
 
 ```powershell
-$body = @{ email = 'patient1@demo.com'; password = 'Passw0rd!'; role = 'PATIENT' } | ConvertTo-Json
-Invoke-RestMethod -Method Post -Uri 'http://localhost:8090/api/auth/register' -ContentType 'application/json' -Body $body
+cd "F:\Projects\DS Project"
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke-test.ps1
 ```
 
-2) Copy `accessToken`, then create appointment:
-- `POST http://localhost:8090/api/appointments`
-- Header: `Authorization: Bearer <token>`
-
-Body:
-```json
-{ "doctorId": 10, "slotTime": "2030-01-01T10:00:00Z" }
-```
-
-3) Watch logs in `notification-service` – it should log the consumed `appointment.created` event.
+Manual note (Windows/PowerShell): `curl.exe` quoting can mangle JSON. Prefer `Invoke-RestMethod` for `application/json` requests.
 
 ---
 
@@ -247,3 +248,27 @@ If you see an error like `open //./pipe/dockerDesktopLinuxEngine: The system can
 - Then re-run `docker compose up -d`.
 
 > The code will still **build and pass unit tests** without Docker, but the full end-to-end workflow needs RabbitMQ + Postgres.
+
+### Docker BuildKit / IO errors during rebuild
+
+If Docker Desktop is unstable (500 errors / I/O errors), avoid forcing rebuilds:
+- Run `scripts/smoke-test.ps1` without `SMOKE_BUILD=1`.
+- If you must rebuild, try restarting Docker Desktop and running `docker builder prune`.
+
+## 🌐 Live Hosting (minimal guide)
+
+For a “live website” style demo on a VPS:
+1) Install Docker + Docker Compose on the server.
+2) Copy the repo to the server.
+3) Create a `.env` file (same folder as `docker-compose.yml`) and set at minimum:
+  - `SECURITY_JWT_SECRET` (use a long random value)
+  - `PAYHERE_MERCHANT_ID` / `PAYHERE_MERCHANT_SECRET` (optional; keep defaults for demo)
+4) Start:
+
+```bash
+docker compose up -d --build
+```
+
+5) Put a reverse proxy (nginx/Caddy) in front for domain + TLS, and forward to:
+- UI: `frontend` (container port 80)
+- API: `api-gateway` (container port 8090)

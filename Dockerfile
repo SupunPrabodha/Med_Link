@@ -24,8 +24,7 @@ COPY common/pom.xml common/pom.xml
 
 # Pre-fetch dependencies for the selected module (and its dependencies)
 # Best-effort only: this step is an optimization for Docker layer caching.
-# Use a locked cache since Compose builds multiple images in parallel.
-RUN --mount=type=cache,target=/root/.m2,sharing=locked \
+RUN \
   test -n "$MODULE" \
   && i=1 \
   && while [ $i -le 3 ]; do \
@@ -43,7 +42,7 @@ RUN --mount=type=cache,target=/root/.m2,sharing=locked \
 COPY . .
 
 # Build the selected module and its dependencies
-RUN --mount=type=cache,target=/root/.m2,sharing=locked \
+RUN \
   test -n "$MODULE" \
   && i=1 \
   && while [ $i -le 5 ]; do \

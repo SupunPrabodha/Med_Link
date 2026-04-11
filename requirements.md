@@ -16,8 +16,16 @@ yes, rubric requires full Dockerized run- Patient Service (scaffold only: servic
 - Payment Service (PayHere-style intent + notify callback signature validation)
 - Notification Service (consumes events, logs notifications)
 
+Implemented UI (minimal, marker-friendly):
+- Frontend (React + Vite + Tailwind) under `frontend/`
+    - Auth (register/login)
+    - Doctor onboarding (submit profile)
+    - Admin doctor verification
+    - Appointment create/list/cancel
+    - Payment intent creation
+    - System status page (health checks)
+
 Not implemented in this skeleton (kept as **target scope / future extensions** in this document):
-- Frontend (React)
 - Patient features (profile, medical reports, medical history)
 - Telemedicine (Jitsi)
 - Prescriptions

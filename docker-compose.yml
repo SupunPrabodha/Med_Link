@@ -212,8 +212,9 @@ services:
       SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-payment:5432/paymentdb"
       SPRING_DATASOURCE_USERNAME: "payment"
       SPRING_DATASOURCE_PASSWORD: "payment"
-      PAYHERE_MERCHANT_ID: "1211149"
-      PAYHERE_MERCHANT_SECRET: "CHANGE_ME_PAYHERE_SECRET"
+      APP_GATEWAY_BASE_URL: "${APP_GATEWAY_BASE_URL:-http://api-gateway:8090}"
+      PAYHERE_MERCHANT_ID: "${PAYHERE_MERCHANT_ID:-1211149}"
+      PAYHERE_MERCHANT_SECRET: "${PAYHERE_MERCHANT_SECRET:-change-me}"
     depends_on:
       service-discovery:
         condition: service_started
@@ -275,7 +276,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: "http://api-gateway:8090"
+        VITE_API_BASE_URL: "/api"
     image: medilink/frontend:0.1.0
     ports:
       - "5173:80"

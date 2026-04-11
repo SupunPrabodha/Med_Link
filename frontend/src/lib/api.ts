@@ -1,6 +1,8 @@
 import axios from 'axios'
 
-const baseURL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8090'
+// Default to same-origin API. In Docker this is served by the frontend Nginx
+// which proxies /api -> http://api-gateway:8090.
+const baseURL = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
 export const api = axios.create({
   baseURL,

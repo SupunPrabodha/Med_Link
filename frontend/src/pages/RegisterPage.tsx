@@ -21,7 +21,7 @@ export function RegisterPage() {
     setLoading(true)
     try {
       await register(email.trim(), password, role)
-      nav('/app')
+      nav(role === 'DOCTOR' ? '/app/doctor/profile' : role === 'ADMIN' ? '/app/admin/doctors' : '/app')
     } catch (err: any) {
       setError(err?.response?.data?.message ?? 'Registration failed')
     } finally {

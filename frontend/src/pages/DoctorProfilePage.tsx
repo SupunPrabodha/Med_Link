@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import { formatApiError } from '../lib/formatApiError'
 import { Badge, Button, Card, Input, Label } from '../ui/primitives'
 
 type DoctorProfile = {
@@ -27,7 +28,7 @@ export function DoctorProfilePage() {
   async function load() {
     setError(null)
     try {
-      const res = await api.get<DoctorProfile>('/api/doctors/me/profile')
+      const res = await api.get<DoctorProfile>('/doctors/me/profile')
       setProfile(res.data)
       setFullName(res.data.fullName)
       setRegistrationNo(res.data.registrationNo)
@@ -44,7 +45,7 @@ export function DoctorProfilePage() {
     setError(null)
     setSuccess(null)
     try {
-      const res = await api.post<DoctorProfile>('/api/doctors/me/profile', {
+      const res = await api.post<DoctorProfile>('/doctors/me/profile', {
         fullName: fullName.trim(),
         registrationNo: registrationNo.trim(),
         specialization: specialization.trim(),
@@ -53,7 +54,7 @@ export function DoctorProfilePage() {
       setProfile(res.data)
       setSuccess('Saved. Status is now ' + res.data.status)
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Failed to save profile')
+      setError(formatApiError(err, 'Failed to save profile'))
     } finally {
       setLoading(false)
     }
@@ -77,6 +78,12 @@ export function DoctorProfilePage() {
         {profile?.rejectionReason && (
           <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
             Rejected: {profile.rejectionReason}
+          </div>
+        )}
+
+        {profile && profile.status !== 'VERIFIED' && (
+          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
+            Your profile is <span className="font-semibold">{profile.status}</span>. You will appear in the Doctors list only after an admin verifies you.
           </div>
         )}
 

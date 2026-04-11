@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import { formatApiError } from '../lib/formatApiError'
 import { Badge, Button, Card, Input, Label } from '../ui/primitives'
 
 type DoctorProfile = {
@@ -24,12 +25,12 @@ export function DoctorsPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await api.get<DoctorProfile[]>('/api/doctors', {
+      const res = await api.get<DoctorProfile[]>('/doctors', {
         params: specialization.trim() ? { specialization: specialization.trim() } : undefined,
       })
       setRows(res.data)
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Failed to load doctors')
+      setError(formatApiError(err, 'Failed to load doctors'))
     } finally {
       setLoading(false)
     }
@@ -64,30 +65,36 @@ export function DoctorsPage() {
       </Card>
 
       <Card>
+        <div className="text-xs text-slate-600">
+          Note: only <span className="font-semibold">VERIFIED</span> doctors are listed here. New doctor accounts must submit a profile and be approved by an admin.
+        </div>
+      </Card>
+
+      <Card>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="text-xs text-slate-500">
+            <thead className="bg-slate-50 text-xs text-slate-600">
               <tr>
-                <th className="py-2">Name</th>
-                <th className="py-2">Specialization</th>
-                <th className="py-2">Reg No</th>
-                <th className="py-2">Status</th>
+                <th className="px-3 py-2 font-semibold">Name</th>
+                <th className="px-3 py-2 font-semibold">Specialization</th>
+                <th className="px-3 py-2 font-semibold">Reg No</th>
+                <th className="px-3 py-2 font-semibold">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {rows.map((d) => (
-                <tr key={d.id}>
-                  <td className="py-3 font-medium text-slate-900">{d.fullName}</td>
-                  <td className="py-3 text-slate-700">{d.specialization}</td>
-                  <td className="py-3 font-mono text-xs text-slate-700">{d.registrationNo}</td>
-                  <td className="py-3">
+                <tr key={d.id} className="hover:bg-slate-50">
+                  <td className="px-3 py-3 font-medium text-slate-900">{d.fullName}</td>
+                  <td className="px-3 py-3 text-slate-700">{d.specialization}</td>
+                  <td className="px-3 py-3 font-mono text-xs text-slate-700">{d.registrationNo}</td>
+                  <td className="px-3 py-3">
                     <Badge>{d.status}</Badge>
                   </td>
                 </tr>
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-slate-500">
+                  <td colSpan={4} className="px-3 py-8 text-center text-slate-500">
                     No doctors found.
                   </td>
                 </tr>

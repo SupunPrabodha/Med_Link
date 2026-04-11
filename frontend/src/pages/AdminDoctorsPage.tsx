@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import { formatApiError } from '../lib/formatApiError'
 import { Badge, Button, Card, Input, Label } from '../ui/primitives'
 
 type DoctorProfile = {
@@ -24,10 +25,10 @@ export function AdminDoctorsPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await api.get<DoctorProfile[]>('/api/admin/doctors/pending')
+      const res = await api.get<DoctorProfile[]>('/admin/doctors/pending')
       setRows(res.data)
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Failed to load pending doctors')
+      setError(formatApiError(err, 'Failed to load pending doctors'))
     } finally {
       setLoading(false)
     }
@@ -36,20 +37,20 @@ export function AdminDoctorsPage() {
   async function approve(id: number) {
     setError(null)
     try {
-      await api.post(`/api/admin/doctors/${id}/approve`)
+      await api.post(`/admin/doctors/${id}/approve`)
       await load()
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Approve failed')
+      setError(formatApiError(err, 'Approve failed'))
     }
   }
 
   async function reject(id: number) {
     setError(null)
     try {
-      await api.post(`/api/admin/doctors/${id}/reject`, { reason: (rejectReason[id] ?? '').trim() || 'Not specified' })
+      await api.post(`/admin/doctors/${id}/reject`, { reason: (rejectReason[id] ?? '').trim() || 'Not specified' })
       await load()
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Reject failed')
+      setError(formatApiError(err, 'Reject failed'))
     }
   }
 
@@ -75,24 +76,24 @@ export function AdminDoctorsPage() {
       <Card>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="text-xs text-slate-500">
+            <thead className="bg-slate-50 text-xs text-slate-600">
               <tr>
-                <th className="py-2">Doctor</th>
-                <th className="py-2">Specialization</th>
-                <th className="py-2">Docs</th>
-                <th className="py-2">Status</th>
-                <th className="py-2">Action</th>
+                <th className="px-3 py-2 font-semibold">Doctor</th>
+                <th className="px-3 py-2 font-semibold">Specialization</th>
+                <th className="px-3 py-2 font-semibold">Docs</th>
+                <th className="px-3 py-2 font-semibold">Status</th>
+                <th className="px-3 py-2 font-semibold">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {rows.map((d) => (
-                <tr key={d.id}>
-                  <td className="py-3">
+                <tr key={d.id} className="hover:bg-slate-50">
+                  <td className="px-3 py-3">
                     <div className="font-medium text-slate-900">{d.fullName}</div>
                     <div className="font-mono text-xs text-slate-600">UID {d.userId}</div>
                   </td>
-                  <td className="py-3 text-slate-700">{d.specialization}</td>
-                  <td className="py-3">
+                  <td className="px-3 py-3 text-slate-700">{d.specialization}</td>
+                  <td className="px-3 py-3">
                     {d.documentsUrl ? (
                       <a className="text-xs font-medium text-slate-900 underline underline-offset-4" href={d.documentsUrl} target="_blank" rel="noreferrer">
                         View
@@ -101,10 +102,10 @@ export function AdminDoctorsPage() {
                       <span className="text-xs text-slate-500">—</span>
                     )}
                   </td>
-                  <td className="py-3">
+                  <td className="px-3 py-3">
                     <Badge>{d.status}</Badge>
                   </td>
-                  <td className="py-3">
+                  <td className="px-3 py-3">
                     <div className="flex flex-col gap-2">
                       <div className="flex gap-2">
                         <Button onClick={() => approve(d.id)}>Approve</Button>
@@ -128,7 +129,7 @@ export function AdminDoctorsPage() {
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-500">
+                  <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
                     No pending doctors.
                   </td>
                 </tr>

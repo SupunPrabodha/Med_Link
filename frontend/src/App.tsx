@@ -18,6 +18,16 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return children
 }
 
+type Role = 'PATIENT' | 'DOCTOR' | 'ADMIN'
+
+function RequireRoles({ allow, children }: { allow: Role[]; children: React.ReactNode }) {
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  const ok = allow.some((r) => user.roles.includes(r))
+  if (!ok) return <Navigate to="/app/dashboard" replace />
+  return children
+}
+
 export default function App() {
   return (
     <Routes>
@@ -35,11 +45,39 @@ export default function App() {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="appointments" element={<AppointmentsPage />} />
+        <Route
+          path="appointments"
+          element={
+            <RequireRoles allow={['PATIENT', 'ADMIN']}>
+              <AppointmentsPage />
+            </RequireRoles>
+          }
+        />
         <Route path="doctors" element={<DoctorsPage />} />
-        <Route path="doctor/profile" element={<DoctorProfilePage />} />
-        <Route path="admin/doctors" element={<AdminDoctorsPage />} />
-        <Route path="payments" element={<PaymentsPage />} />
+        <Route
+          path="doctor/profile"
+          element={
+            <RequireRoles allow={['DOCTOR']}>
+              <DoctorProfilePage />
+            </RequireRoles>
+          }
+        />
+        <Route
+          path="admin/doctors"
+          element={
+            <RequireRoles allow={['ADMIN']}>
+              <AdminDoctorsPage />
+            </RequireRoles>
+          }
+        />
+        <Route
+          path="payments"
+          element={
+            <RequireRoles allow={['PATIENT', 'ADMIN']}>
+              <PaymentsPage />
+            </RequireRoles>
+          }
+        />
         <Route path="status" element={<SystemStatusPage />} />
       </Route>
 

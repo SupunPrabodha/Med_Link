@@ -11,13 +11,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Component
 public class PaymentEventHandlers {
 	private static final Logger log = LoggerFactory.getLogger(PaymentEventHandlers.class);
-
-	public record PaymentCompleted(Long paymentId, Long appointmentId) {
-	}
 
 	private final AppointmentRepository repo;
 	private final RabbitTemplate rabbit;
@@ -29,20 +27,13 @@ public class PaymentEventHandlers {
 
 	@RabbitListener(queues = "appointment.payment.completed")
 	@Transactional
-	public void onPaymentCompleted(Object event) {
-		// We keep this loosely typed to avoid tight coupling; we only need appointmentId.
-		// Spring will deserialize to LinkedHashMap for JSON; handle both map and record.
-		Long appointmentId = null;
-		if (event instanceof java.util.Map<?, ?> m) {
-			Object v = m.get("appointmentId");
-			if (v != null) appointmentId = Long.valueOf(v.toString());
-		} else if (event instanceof PaymentCompleted pc) {
-			appointmentId = pc.appointmentId();
-		}
-		if (appointmentId == null) {
+	public void onPaymentCompleted(Map<String, Object> event) {
+		Object v = event.get("appointmentId");
+		if (v == null) {
 			log.warn("payment.completed event missing appointmentId: {}", event);
 			return;
 		}
+		Long appointmentId = Long.valueOf(v.toString());
 
 		Appointment appt = repo.findById(appointmentId).orElse(null);
 		if (appt == null) {

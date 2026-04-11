@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import axios from 'axios'
 import { api } from '../lib/api'
 import { Badge, Button, Card, Divider } from '../ui/primitives'
 
@@ -6,11 +7,11 @@ type PingRow = { name: string; url: string; requiresAuth?: boolean }
 
 const pings: PingRow[] = [
   { name: 'Gateway', url: '/actuator/health', requiresAuth: false },
-  { name: 'Auth', url: '/api/auth/login', requiresAuth: false },
-  { name: 'Appointment', url: '/api/appointments/ping', requiresAuth: true },
-  { name: 'Doctor', url: '/api/doctors/ping', requiresAuth: true },
-  { name: 'Payment', url: '/api/payments/ping', requiresAuth: true },
-  { name: 'Patient', url: '/api/patients/ping', requiresAuth: true },
+  { name: 'Auth', url: '/auth/login', requiresAuth: false },
+  { name: 'Appointment', url: '/appointments/ping', requiresAuth: true },
+  { name: 'Doctor', url: '/doctors/ping', requiresAuth: true },
+  { name: 'Payment', url: '/payments/ping', requiresAuth: true },
+  { name: 'Patient', url: '/patients/ping', requiresAuth: true },
 ]
 
 export function SystemStatusPage() {
@@ -22,11 +23,11 @@ export function SystemStatusPage() {
     const out: Record<string, string> = {}
     for (const p of pings) {
       try {
-        if (p.url === '/api/auth/login') {
+        if (p.url === '/auth/login') {
           out[p.name] = 'OK (endpoint reachable)'
           continue
         }
-        const res = await api.get(p.url)
+        const res = p.url.startsWith('/actuator/') ? await axios.get(p.url) : await api.get(p.url)
         out[p.name] = typeof res.data === 'string' ? res.data : JSON.stringify(res.data)
       } catch (err: any) {
         out[p.name] = err?.response?.status ? `HTTP ${err.response.status}` : 'Error'
