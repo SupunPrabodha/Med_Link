@@ -15,6 +15,38 @@ type DoctorProfile = {
   rejectionReason?: string | null
 }
 
+type AvailabilityBlock = {
+  id?: number
+  doctorId?: number
+  dayOfWeek: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY'
+  startTime: string
+  endTime: string
+}
+
+const DAYS: AvailabilityBlock['dayOfWeek'][] = [
+  'MONDAY',
+  'TUESDAY',
+  'WEDNESDAY',
+  'THURSDAY',
+  'FRIDAY',
+  'SATURDAY',
+  'SUNDAY',
+]
+
+function normalizeTime(t: string) {
+  if (!t) return ''
+  // API may return HH:mm:ss; <input type="time"> expects HH:mm
+  return t.length >= 5 ? t.slice(0, 5) : t
+}
+
+function minutesOf(t: string) {
+  const [hh, mm] = t.split(':')
+  const h = Number.parseInt(hh ?? '', 10)
+  const m = Number.parseInt(mm ?? '', 10)
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return NaN
+  return h * 60 + m
+}
+
 export function DoctorProfilePage() {
   const [profile, setProfile] = useState<DoctorProfile | null>(null)
   const [fullName, setFullName] = useState('')
@@ -24,6 +56,15 @@ export function DoctorProfilePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+
+  const [availability, setAvailability] = useState<AvailabilityBlock[]>([])
+  const [dayOfWeek, setDayOfWeek] = useState<AvailabilityBlock['dayOfWeek']>('MONDAY')
+  const [startTime, setStartTime] = useState('09:00')
+  const [endTime, setEndTime] = useState('17:00')
+  const [availLoading, setAvailLoading] = useState(false)
+  const [availSaving, setAvailSaving] = useState(false)
+  const [availError, setAvailError] = useState<string | null>(null)
+  const [availSuccess, setAvailSuccess] = useState<string | null>(null)
 
   async function load() {
     setError(null)
@@ -37,6 +78,98 @@ export function DoctorProfilePage() {
     } catch (err: any) {
       setProfile(null)
       // if not created yet, server likely returns 404
+    }
+  }
+
+  async function loadAvailability() {
+    setAvailError(null)
+    setAvailSuccess(null)
+    setAvailLoading(true)
+    try {
+      const res = await api.get<AvailabilityBlock[]>('/doctors/me/availability')
+      setAvailability(
+        (res.data ?? []).map((b) => ({
+          ...b,
+          startTime: normalizeTime(b.startTime),
+          endTime: normalizeTime(b.endTime),
+        })),
+      )
+    } catch (err: any) {
+      const status = err?.response?.status
+      if (status === 404) {
+        setAvailability([])
+        return
+      }
+      setAvailError(formatApiError(err, 'Failed to load availability'))
+    } finally {
+      setAvailLoading(false)
+    }
+  }
+
+  function addBlock() {
+    setAvailError(null)
+    setAvailSuccess(null)
+
+    const s = normalizeTime(startTime)
+    const e = normalizeTime(endTime)
+    const sm = minutesOf(s)
+    const em = minutesOf(e)
+    if (!Number.isFinite(sm) || !Number.isFinite(em)) {
+      setAvailError('Start/end time is invalid')
+      return
+    }
+    if (sm >= em) {
+      setAvailError('Start time must be before end time')
+      return
+    }
+
+    const next: AvailabilityBlock = { dayOfWeek, startTime: s, endTime: e }
+    const dayIndex = new Map(DAYS.map((d, i) => [d, i]))
+    setAvailability((prev) =>
+      [...prev, next].sort((a, b) => {
+        const da = dayIndex.get(a.dayOfWeek) ?? 0
+        const db = dayIndex.get(b.dayOfWeek) ?? 0
+        if (da !== db) return da - db
+        return minutesOf(a.startTime) - minutesOf(b.startTime)
+      }),
+    )
+  }
+
+  function removeBlock(idx: number) {
+    setAvailError(null)
+    setAvailSuccess(null)
+    setAvailability((prev) => prev.filter((_, i) => i !== idx))
+  }
+
+  async function saveAvailability() {
+    if (!profile) {
+      setAvailError('Create your profile first')
+      return
+    }
+
+    setAvailSaving(true)
+    setAvailError(null)
+    setAvailSuccess(null)
+    try {
+      const res = await api.put<AvailabilityBlock[]>('/doctors/me/availability', {
+        blocks: availability.map((b) => ({
+          dayOfWeek: b.dayOfWeek,
+          startTime: normalizeTime(b.startTime),
+          endTime: normalizeTime(b.endTime),
+        })),
+      })
+      setAvailability(
+        (res.data ?? []).map((b) => ({
+          ...b,
+          startTime: normalizeTime(b.startTime),
+          endTime: normalizeTime(b.endTime),
+        })),
+      )
+      setAvailSuccess('Availability saved')
+    } catch (err: any) {
+      setAvailError(formatApiError(err, 'Failed to save availability'))
+    } finally {
+      setAvailSaving(false)
     }
   }
 
@@ -62,6 +195,7 @@ export function DoctorProfilePage() {
 
   useEffect(() => {
     void load()
+    void loadAvailability()
   }, [])
 
   return (
@@ -123,6 +257,106 @@ export function DoctorProfilePage() {
           </Button>
           <Button variant="secondary" onClick={load}>
             Refresh
+          </Button>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold text-slate-900">Availability</div>
+            <div className="text-xs text-slate-500">Patients can only book within these weekly blocks (30-minute slots).</div>
+          </div>
+          <Button variant="secondary" onClick={loadAvailability} disabled={availLoading}>
+            {availLoading ? 'Loading…' : 'Refresh'}
+          </Button>
+        </div>
+
+        {!profile && (
+          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
+            Create your profile first to manage availability.
+          </div>
+        )}
+
+        <div className="mt-4 grid gap-4 md:grid-cols-4">
+          <div>
+            <Label>Day</Label>
+            <div className="mt-1">
+              <select
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+                value={dayOfWeek}
+                onChange={(e) => setDayOfWeek(e.target.value as AvailabilityBlock['dayOfWeek'])}
+                disabled={availSaving || !profile}
+              >
+                {DAYS.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div>
+            <Label>Start</Label>
+            <div className="mt-1">
+              <Input type="time" step={1800} value={startTime} onChange={(e) => setStartTime(e.target.value)} disabled={availSaving || !profile} />
+            </div>
+          </div>
+          <div>
+            <Label>End</Label>
+            <div className="mt-1">
+              <Input type="time" step={1800} value={endTime} onChange={(e) => setEndTime(e.target.value)} disabled={availSaving || !profile} />
+            </div>
+          </div>
+          <div className="flex items-end">
+            <Button className="w-full" onClick={addBlock} disabled={availSaving || !profile}>
+              Add block
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 text-xs text-slate-600">
+              <tr>
+                <th className="px-3 py-2 font-semibold">Day</th>
+                <th className="px-3 py-2 font-semibold">Start</th>
+                <th className="px-3 py-2 font-semibold">End</th>
+                <th className="px-3 py-2 font-semibold">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {availability.map((b, idx) => (
+                <tr key={`${b.dayOfWeek}-${b.startTime}-${b.endTime}-${idx}`} className="hover:bg-slate-50">
+                  <td className="px-3 py-3 text-xs text-slate-700">{b.dayOfWeek}</td>
+                  <td className="px-3 py-3 font-mono text-xs text-slate-700">{normalizeTime(b.startTime)}</td>
+                  <td className="px-3 py-3 font-mono text-xs text-slate-700">{normalizeTime(b.endTime)}</td>
+                  <td className="px-3 py-3">
+                    <Button variant="secondary" onClick={() => removeBlock(idx)} disabled={availSaving || !profile}>
+                      Remove
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+              {availability.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-3 py-8 text-center text-slate-500">
+                    No availability blocks set.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {availError && <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{availError}</div>}
+        {availSuccess && (
+          <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">{availSuccess}</div>
+        )}
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button onClick={saveAvailability} disabled={availSaving || !profile}>
+            {availSaving ? 'Saving…' : 'Save availability'}
           </Button>
         </div>
       </Card>

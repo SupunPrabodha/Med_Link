@@ -187,8 +187,30 @@ $inList = $doctors | Where-Object { $_.id -eq $doctorId } | Select-Object -First
 if(-not $inList) { throw "Approved doctor not found in GET /api/doctors (id=$doctorId)" }
 if($inList.status -ne "VERIFIED") { throw "Expected doctor status VERIFIED in doctors list; got '$($inList.status)'" }
 
+# Doctor sets availability (weekly blocks)
+$availabilityBody = @{
+  blocks = @(
+    @{ dayOfWeek = "MONDAY"; startTime = "09:00"; endTime = "17:00" },
+    @{ dayOfWeek = "TUESDAY"; startTime = "09:00"; endTime = "17:00" },
+    @{ dayOfWeek = "WEDNESDAY"; startTime = "09:00"; endTime = "17:00" },
+    @{ dayOfWeek = "THURSDAY"; startTime = "09:00"; endTime = "17:00" },
+    @{ dayOfWeek = "FRIDAY"; startTime = "09:00"; endTime = "17:00" },
+    @{ dayOfWeek = "SATURDAY"; startTime = "09:00"; endTime = "17:00" },
+    @{ dayOfWeek = "SUNDAY"; startTime = "09:00"; endTime = "17:00" }
+  )
+} | ConvertTo-Json -Depth 5
+
+$availability = Invoke-RestMethod -Method Put -Uri "$gateway/api/doctors/me/availability" -ContentType "application/json" -Headers $doctorHeaders -Body $availabilityBody
+Write-Host "Set doctor availability blocks=$($availability.Count)"
+
+# Fetch available slots and pick one
+$slots = Invoke-RestMethod -Method Get -Uri "$gateway/api/appointments/available-slots?doctorId=$doctorId&days=14" -Headers $patientHeaders
+$slot = $slots | Select-Object -First 1
+if(-not $slot) { throw "No available slots returned for doctorId=$doctorId" }
+Write-Host "Selected slot=$slot"
+
 # Patient creates appointment
-$apptBody = @{ doctorId = $doctorId; slotTime = "2030-01-01T10:00:00Z" } | ConvertTo-Json
+$apptBody = @{ doctorId = $doctorId; slotTime = $slot } | ConvertTo-Json
 $appt = Invoke-RestMethod -Method Post -Uri "$gateway/api/appointments" -ContentType "application/json" -Headers $patientHeaders -Body $apptBody
 Write-Host "Created appointment id=$($appt.id) status=$($appt.status)"
 

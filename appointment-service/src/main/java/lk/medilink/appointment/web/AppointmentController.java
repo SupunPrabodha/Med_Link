@@ -31,6 +31,12 @@ public class AppointmentController {
 		return service.listForPatient(patientId);
 	}
 
+	@GetMapping("/available-slots")
+	public List<Instant> availableSlots(@RequestParam("doctorId") Long doctorId,
+	                                  @RequestParam(value = "days", required = false, defaultValue = "14") int days) {
+		return service.availableSlots(doctorId, days);
+	}
+
 	@DeleteMapping("/{id}")
 	public Appointment cancel(@RequestHeader("X-User-Id") Long patientId,
 	                        @RequestHeader(value = "X-User-Role", required = false) String roles,

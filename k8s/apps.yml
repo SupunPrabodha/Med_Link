@@ -124,6 +124,8 @@ spec:
                 configMapKeyRef:
                   name: medilink-config
                   key: RABBIT_HOST
+            - name: APP_DOCTOR_BASE_URL
+              value: "http://doctor-service:8084"
             - name: SPRING_DATASOURCE_URL
               valueFrom:
                 secretKeyRef:

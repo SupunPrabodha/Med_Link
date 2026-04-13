@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Badge, Button, Card, Input, Label } from '../ui/primitives'
+import { Badge, Button, Card, Label } from '../ui/primitives'
 
 type DoctorOption = {
   id: number
@@ -23,13 +23,41 @@ export function AppointmentsPage() {
   const [doctors, setDoctors] = useState<DoctorOption[]>([])
   const [doctorId, setDoctorId] = useState('')
   const [slotTime, setSlotTime] = useState('')
+  const [availableSlots, setAvailableSlots] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const [slotsLoading, setSlotsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  function getMinDateTimeLocal(minutesAhead: number) {
-    const d = new Date(Date.now() + minutesAhead * 60_000)
-    const pad = (n: number) => String(n).padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  async function refreshSlots(nextDoctorId?: string) {
+    const idStr = (nextDoctorId ?? doctorId).trim()
+    if (!idStr) {
+      setAvailableSlots([])
+      setSlotTime('')
+      return
+    }
+
+    const parsedDoctorId = Number.parseInt(idStr, 10)
+    if (!Number.isFinite(parsedDoctorId) || parsedDoctorId <= 0) {
+      setAvailableSlots([])
+      setSlotTime('')
+      return
+    }
+
+    setSlotsLoading(true)
+    setError(null)
+    try {
+      const res = await api.get<string[]>('/appointments/available-slots', {
+        params: { doctorId: parsedDoctorId, days: 14 },
+      })
+      setAvailableSlots(res.data)
+      setSlotTime(res.data[0] ?? '')
+    } catch (err: any) {
+      setAvailableSlots([])
+      setSlotTime('')
+      setError(formatApiError(err, 'Failed to load available slots'))
+    } finally {
+      setSlotsLoading(false)
+    }
   }
 
   async function refresh() {
@@ -61,7 +89,7 @@ export function AppointmentsPage() {
 
       const parsedSlotMs = new Date(slotTime).getTime()
       if (!Number.isFinite(parsedSlotMs)) {
-        setError('Slot time is invalid')
+        setError('Please select an available slot')
         return
       }
       if (parsedSlotMs <= Date.now() + 60_000) {
@@ -71,12 +99,11 @@ export function AppointmentsPage() {
 
       const payload = {
         doctorId: parsedDoctorId,
-        slotTime: new Date(parsedSlotMs).toISOString(),
+        slotTime,
       }
       await api.post('/appointments', payload)
-      // Keep doctor selection for faster repeated booking.
-      setSlotTime('')
       await refresh()
+      await refreshSlots()
     } catch (err: any) {
       setError(formatApiError(err, 'Create failed'))
     } finally {
@@ -89,6 +116,7 @@ export function AppointmentsPage() {
     try {
       await api.delete(`/appointments/${id}`)
       await refresh()
+      await refreshSlots()
     } catch (err: any) {
       setError(formatApiError(err, 'Cancel failed'))
     }
@@ -97,6 +125,10 @@ export function AppointmentsPage() {
   useEffect(() => {
     void refresh()
   }, [])
+
+  useEffect(() => {
+    void refreshSlots()
+  }, [doctorId])
 
   return (
     <div className="space-y-6">
@@ -118,7 +150,9 @@ export function AppointmentsPage() {
               <select
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
                 value={doctorId}
-                onChange={(e) => setDoctorId(e.target.value)}
+                onChange={(e) => {
+                  setDoctorId(e.target.value)
+                }}
                 disabled={loading}
               >
                 <option value="">Select a verified doctor…</option>
@@ -138,18 +172,36 @@ export function AppointmentsPage() {
             )}
           </div>
           <div>
-            <Label>Slot time</Label>
+            <Label>Available slots</Label>
             <div className="mt-1">
-              <Input
-                type="datetime-local"
-                min={getMinDateTimeLocal(1)}
+              <select
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
                 value={slotTime}
                 onChange={(e) => setSlotTime(e.target.value)}
-              />
+                disabled={loading || slotsLoading || !doctorId.trim()}
+              >
+                <option value="">
+                  {!doctorId.trim()
+                    ? 'Select a doctor first…'
+                    : slotsLoading
+                      ? 'Loading slots…'
+                      : availableSlots.length === 0
+                        ? 'No available slots'
+                        : 'Select a slot…'}
+                </option>
+                {availableSlots.map((iso) => (
+                  <option key={iso} value={iso}>
+                    {new Date(iso).toLocaleString()}
+                  </option>
+                ))}
+              </select>
             </div>
+            {doctorId.trim() && !slotsLoading && availableSlots.length === 0 && (
+              <div className="mt-2 text-xs text-slate-500">This doctor has no availability set (or all slots are booked).</div>
+            )}
           </div>
           <div className="flex items-end">
-            <Button className="w-full" onClick={create} disabled={loading || !doctorId.trim() || !slotTime.trim()}>
+            <Button className="w-full" onClick={create} disabled={loading || slotsLoading || !doctorId.trim() || !slotTime.trim()}>
               Create
             </Button>
           </div>
