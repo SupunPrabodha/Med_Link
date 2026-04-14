@@ -15,9 +15,20 @@ type DoctorProfile = {
   rejectionReason?: string | null
 }
 
+function isToday(slotIso: string) {
+  const slot = new Date(slotIso)
+  const now = new Date()
+  return (
+    slot.getFullYear() === now.getFullYear() &&
+    slot.getMonth() === now.getMonth() &&
+    slot.getDate() === now.getDate()
+  )
+}
+
 export function DoctorsPage() {
   const [specialization, setSpecialization] = useState('')
   const [rows, setRows] = useState<DoctorProfile[]>([])
+  const [slotCounts, setSlotCounts] = useState<Record<number, number | null>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -28,7 +39,29 @@ export function DoctorsPage() {
       const res = await api.get<DoctorProfile[]>('/doctors', {
         params: specialization.trim() ? { specialization: specialization.trim() } : undefined,
       })
-      setRows(res.data)
+      const doctors = res.data ?? []
+      setRows(doctors)
+
+      if (doctors.length === 0) {
+        setSlotCounts({})
+        return
+      }
+
+      const counts = await Promise.all(
+        doctors.map(async (d) => {
+          try {
+            const slotsRes = await api.get<string[]>('/appointments/available-slots', {
+              params: { doctorId: d.id, days: 1 },
+            })
+            const todayCount = (slotsRes.data ?? []).filter(isToday).length
+            return [d.id, todayCount] as const
+          } catch {
+            return [d.id, null] as const
+          }
+        }),
+      )
+
+      setSlotCounts(Object.fromEntries(counts))
     } catch (err: any) {
       setError(formatApiError(err, 'Failed to load doctors'))
     } finally {
@@ -78,6 +111,7 @@ export function DoctorsPage() {
                 <th className="px-3 py-2 font-semibold">Name</th>
                 <th className="px-3 py-2 font-semibold">Specialization</th>
                 <th className="px-3 py-2 font-semibold">Reg No</th>
+                <th className="px-3 py-2 font-semibold">Available Slots (Today)</th>
                 <th className="px-3 py-2 font-semibold">Status</th>
               </tr>
             </thead>
@@ -87,6 +121,9 @@ export function DoctorsPage() {
                   <td className="px-3 py-3 font-medium text-slate-900">{d.fullName}</td>
                   <td className="px-3 py-3 text-slate-700">{d.specialization}</td>
                   <td className="px-3 py-3 font-mono text-xs text-slate-700">{d.registrationNo}</td>
+                  <td className="px-3 py-3 font-mono text-xs text-slate-700">
+                    {slotCounts[d.id] == null ? 'N/A' : slotCounts[d.id]}
+                  </td>
                   <td className="px-3 py-3">
                     <Badge>{d.status}</Badge>
                   </td>
@@ -94,7 +131,7 @@ export function DoctorsPage() {
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-3 py-8 text-center text-slate-500">
+                  <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
                     No doctors found.
                   </td>
                 </tr>
