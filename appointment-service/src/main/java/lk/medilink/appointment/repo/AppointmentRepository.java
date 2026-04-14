@@ -12,6 +12,10 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
 	List<Appointment> findByDoctorIdOrderBySlotTimeAsc(Long doctorId);
 
+	List<Appointment> findByDoctorIdAndStatusOrderBySlotTimeAsc(Long doctorId, AppointmentStatus status);
+
+	boolean existsByDoctorIdAndPatientIdAndStatus(Long doctorId, Long patientId, AppointmentStatus status);
+
 	boolean existsByDoctorIdAndSlotTimeAndStatusNot(Long doctorId, Instant slotTime, AppointmentStatus status);
 
 	List<Appointment> findByDoctorIdAndSlotTimeBetween(Long doctorId, Instant from, Instant to);

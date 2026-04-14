@@ -19,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 import java.time.Duration;
@@ -27,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.web.client.HttpStatusCodeException;
 
 @Service
 public class AppointmentAppService {
@@ -35,11 +37,13 @@ public class AppointmentAppService {
 	private final RabbitTemplate rabbit;
 	private final RestTemplate rest;
 	private final String doctorBaseUrl;
+	private final String patientBaseUrl;
 
 	public AppointmentAppService(AppointmentRepository repo,
 	                            RabbitTemplate rabbit,
 	                            RestTemplateBuilder restTemplateBuilder,
-	                            @Value("${app.doctor-base-url:http://localhost:8084}") String doctorBaseUrl) {
+	                            @Value("${app.doctor-base-url:http://localhost:8084}") String doctorBaseUrl,
+	                            @Value("${app.patient-base-url:http://localhost:8086}") String patientBaseUrl) {
 		this.repo = repo;
 		this.rabbit = rabbit;
 		this.rest = restTemplateBuilder
@@ -47,6 +51,7 @@ public class AppointmentAppService {
 				.setReadTimeout(Duration.ofSeconds(5))
 				.build();
 		this.doctorBaseUrl = doctorBaseUrl;
+		this.patientBaseUrl = patientBaseUrl;
 	}
 
 	@Transactional
@@ -159,6 +164,95 @@ public class AppointmentAppService {
 		return repo.findByDoctorIdOrderBySlotTimeAsc(doctorId);
 	}
 
+	public List<DoctorPatientWithReportsResponse> listConfirmedPatientsWithReportsForDoctorUser(Long doctorUserId) {
+		Long doctorId = resolveDoctorIdForUser(doctorUserId);
+		List<Appointment> confirmedAppointments = repo.findByDoctorIdAndStatusOrderBySlotTimeAsc(doctorId, AppointmentStatus.CONFIRMED);
+		if (confirmedAppointments.isEmpty()) {
+			return List.of();
+		}
+
+		List<Long> patientUserIds = confirmedAppointments.stream()
+				.map(Appointment::getPatientId)
+				.distinct()
+				.toList();
+
+		ResponseEntity<PatientWithReportsResponse[]> response;
+		try {
+			String uri = UriComponentsBuilder.fromHttpUrl(patientBaseUrl)
+					.path("/api/patients/internal/patients-with-reports")
+					.queryParam("userIds", patientUserIds.toArray())
+					.toUriString();
+
+			response = rest.exchange(uri, HttpMethod.GET, HttpEntity.EMPTY, PatientWithReportsResponse[].class);
+		} catch (RestClientException ex) {
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Patient service unavailable");
+		}
+
+		PatientWithReportsResponse[] body = response.getBody();
+		if (body == null || body.length == 0) {
+			return patientUserIds.stream()
+					.map(userId -> new DoctorPatientWithReportsResponse(userId, null, null, 0, List.of()))
+					.toList();
+		}
+
+		return Arrays.stream(body)
+				.filter(p -> p != null && p.userId() != null)
+				.map(p -> new DoctorPatientWithReportsResponse(
+						p.userId(),
+						p.fullName(),
+						p.phone(),
+						(int) confirmedAppointments.stream().filter(a -> p.userId().equals(a.getPatientId())).count(),
+						p.reports() == null ? List.of() : p.reports()
+				))
+				.toList();
+	}
+
+	public ResponseEntity<byte[]> downloadPatientReportForDoctorUser(Long doctorUserId, Long patientId, Long reportId) {
+		if (patientId == null || patientId <= 0 || reportId == null || reportId <= 0) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid patientId or reportId");
+		}
+
+		Long doctorId = resolveDoctorIdForUser(doctorUserId);
+		boolean allowed = repo.existsByDoctorIdAndPatientIdAndStatus(doctorId, patientId, AppointmentStatus.CONFIRMED);
+		if (!allowed) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed");
+		}
+
+		try {
+			String uri = UriComponentsBuilder.fromHttpUrl(patientBaseUrl)
+					.path("/api/patients/internal/patients/{patientId}/reports/{reportId}/download")
+					.buildAndExpand(patientId, reportId)
+					.toUriString();
+
+			ResponseEntity<byte[]> response = rest.exchange(uri, HttpMethod.GET, HttpEntity.EMPTY, byte[].class);
+			byte[] body = response.getBody();
+			if (body == null) {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Report not found");
+			}
+
+			HttpHeaders out = new HttpHeaders();
+			MediaType ct = response.getHeaders().getContentType();
+			out.setContentType(ct != null ? ct : MediaType.APPLICATION_OCTET_STREAM);
+			long len = response.getHeaders().getContentLength();
+			if (len >= 0) {
+				out.setContentLength(len);
+			}
+			String disposition = response.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION);
+			if (disposition != null && !disposition.isBlank()) {
+				out.set(HttpHeaders.CONTENT_DISPOSITION, disposition);
+			}
+
+			return new ResponseEntity<>(body, out, HttpStatus.OK);
+		} catch (HttpStatusCodeException ex) {
+			if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Report not found");
+			}
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Patient service unavailable");
+		} catch (RestClientException ex) {
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Patient service unavailable");
+		}
+	}
+
 	@Transactional
 	public Appointment updateApprovalForDoctorUser(Long appointmentId, Long doctorUserId, AppointmentApproval appoinmentApproval) {
 		if (appoinmentApproval == null) {
@@ -206,6 +300,33 @@ public class AppointmentAppService {
 	}
 
 	public record DoctorProfileResponse(Long id) {
+	}
+
+	public record MedicalReportRow(
+			Long id,
+			String fileName,
+			String contentType,
+			long sizeBytes,
+			String description,
+			Instant uploadedAt
+	) {
+	}
+
+	public record PatientWithReportsResponse(
+			Long userId,
+			String fullName,
+			String phone,
+			List<MedicalReportRow> reports
+	) {
+	}
+
+	public record DoctorPatientWithReportsResponse(
+			Long patientId,
+			String fullName,
+			String phone,
+			int confirmedAppointmentsCount,
+			List<MedicalReportRow> reports
+	) {
 	}
 }
 

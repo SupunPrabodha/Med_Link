@@ -188,6 +188,7 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://service-discovery:8761/eureka"
       SPRING_RABBITMQ_HOST: "rabbitmq"
       APP_DOCTOR_BASE_URL: "http://doctor-service:8084"
+      APP_PATIENT_BASE_URL: "http://patient-service:8086"
       SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-appointment:5432/appointmentdb"
       SPRING_DATASOURCE_USERNAME: "appointment"
       SPRING_DATASOURCE_PASSWORD: "appointment"
