@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { formatApiError } from '../lib/formatApiError'
-import { Button, Card, Input, Label } from '../ui/primitives'
+import { Alert, Button, Card, Input, Label } from '../ui/primitives'
 
 export function LoginPage() {
   const { login } = useAuth()
@@ -48,7 +48,7 @@ export function LoginPage() {
                 <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
               </div>
             </div>
-            {error && <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error}</div>}
+            {error && <Alert tone="error">{error}</Alert>}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Signing in…' : 'Sign in'}
             </Button>

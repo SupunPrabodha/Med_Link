@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Badge, Button, Card, Input, Label } from '../ui/primitives'
+import { Alert, Badge, Button, Card, Input, Label } from '../ui/primitives'
 
 type PatientProfile = {
   id: number
@@ -231,8 +231,16 @@ export function PatientProfilePage() {
           {profile?.updatedAt && <Badge>Updated {new Date(profile.updatedAt).toLocaleString()}</Badge>}
         </div>
 
-        {error && <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error}</div>}
-        {success && <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">{success}</div>}
+        {error && (
+          <div className="mt-4">
+            <Alert tone="error">{error}</Alert>
+          </div>
+        )}
+        {success && (
+          <div className="mt-4">
+            <Alert tone="success">{success}</Alert>
+          </div>
+        )}
       </Card>
 
       <Card>
@@ -294,7 +302,7 @@ export function PatientProfilePage() {
                       <Button variant="secondary" onClick={() => downloadReport(r)}>
                         Download
                       </Button>
-                      <Button variant="ghost" onClick={() => deleteReport(r.id)} disabled={loading}>
+                      <Button variant="danger" onClick={() => deleteReport(r.id)} disabled={loading}>
                         Remove
                       </Button>
                     </div>

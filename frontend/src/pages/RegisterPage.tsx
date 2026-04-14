@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { formatApiError } from '../lib/formatApiError'
-import { Button, Card, Input, Label } from '../ui/primitives'
+import { Alert, Button, Card, Input, Label, Select } from '../ui/primitives'
 
 type Role = 'PATIENT' | 'DOCTOR' | 'ADMIN'
 
@@ -55,8 +55,7 @@ export function RegisterPage() {
             <div>
               <Label>Role</Label>
               <div className="mt-1">
-                <select
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+                <Select
                   value={role}
                   onChange={(e) => setRole(e.target.value as Role)}
                   disabled={loading}
@@ -64,14 +63,14 @@ export function RegisterPage() {
                   <option value="PATIENT">Patient</option>
                   <option value="DOCTOR">Doctor</option>
                   <option value="ADMIN">Admin (demo)</option>
-                </select>
+                </Select>
               </div>
               <div className="mt-2 text-xs text-slate-500">
                 Doctor accounts require admin verification. Admin accounts are for demo use only.
               </div>
             </div>
 
-            {error && <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error}</div>}
+            {error && <Alert tone="error">{error}</Alert>}
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Creating…' : 'Create account'}

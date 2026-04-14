@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Badge, Button, Card, Input, Label } from '../ui/primitives'
+import { Alert, Badge, Button, Card, Input, Label } from '../ui/primitives'
 
 type DoctorProfile = {
   id: number
@@ -61,7 +61,11 @@ export function DoctorsPage() {
             </Button>
           </div>
         </div>
-        {error && <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error}</div>}
+        {error && (
+          <div className="mt-4">
+            <Alert tone="error">{error}</Alert>
+          </div>
+        )}
       </Card>
 
       <Card>

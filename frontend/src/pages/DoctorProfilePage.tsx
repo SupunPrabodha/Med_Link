@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Badge, Button, Card, Input, Label } from '../ui/primitives'
+import { Alert, Badge, Button, Card, Input, Label, Select } from '../ui/primitives'
 
 type DoctorProfile = {
   id: number
@@ -210,14 +210,16 @@ export function DoctorProfilePage() {
         </div>
 
         {profile?.rejectionReason && (
-          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-            Rejected: {profile.rejectionReason}
+          <div className="mt-4">
+            <Alert tone="warning">Rejected: {profile.rejectionReason}</Alert>
           </div>
         )}
 
         {profile && profile.status !== 'VERIFIED' && (
-          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
-            Your profile is <span className="font-semibold">{profile.status}</span>. You will appear in the Doctors list only after an admin verifies you.
+          <div className="mt-4">
+            <Alert tone="info">
+              Your profile is <span className="font-semibold">{profile.status}</span>. You will appear in the Doctors list only after an admin verifies you.
+            </Alert>
           </div>
         )}
 
@@ -248,8 +250,16 @@ export function DoctorProfilePage() {
           </div>
         </div>
 
-        {error && <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error}</div>}
-        {success && <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">{success}</div>}
+        {error && (
+          <div className="mt-4">
+            <Alert tone="error">{error}</Alert>
+          </div>
+        )}
+        {success && (
+          <div className="mt-4">
+            <Alert tone="success">{success}</Alert>
+          </div>
+        )}
 
         <div className="mt-4 flex flex-wrap gap-2">
           <Button onClick={save} disabled={loading}>
@@ -273,8 +283,8 @@ export function DoctorProfilePage() {
         </div>
 
         {!profile && (
-          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
-            Create your profile first to manage availability.
+          <div className="mt-4">
+            <Alert tone="info">Create your profile first to manage availability.</Alert>
           </div>
         )}
 
@@ -282,8 +292,7 @@ export function DoctorProfilePage() {
           <div>
             <Label>Day</Label>
             <div className="mt-1">
-              <select
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+              <Select
                 value={dayOfWeek}
                 onChange={(e) => setDayOfWeek(e.target.value as AvailabilityBlock['dayOfWeek'])}
                 disabled={availSaving || !profile}
@@ -293,7 +302,7 @@ export function DoctorProfilePage() {
                     {d}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
           <div>
@@ -332,7 +341,7 @@ export function DoctorProfilePage() {
                   <td className="px-3 py-3 font-mono text-xs text-slate-700">{normalizeTime(b.startTime)}</td>
                   <td className="px-3 py-3 font-mono text-xs text-slate-700">{normalizeTime(b.endTime)}</td>
                   <td className="px-3 py-3">
-                    <Button variant="secondary" onClick={() => removeBlock(idx)} disabled={availSaving || !profile}>
+                    <Button variant="danger" onClick={() => removeBlock(idx)} disabled={availSaving || !profile}>
                       Remove
                     </Button>
                   </td>
@@ -349,9 +358,15 @@ export function DoctorProfilePage() {
           </table>
         </div>
 
-        {availError && <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{availError}</div>}
+        {availError && (
+          <div className="mt-4">
+            <Alert tone="error">{availError}</Alert>
+          </div>
+        )}
         {availSuccess && (
-          <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">{availSuccess}</div>
+          <div className="mt-4">
+            <Alert tone="success">{availSuccess}</Alert>
+          </div>
         )}
 
         <div className="mt-4 flex flex-wrap gap-2">
