@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
 import { Badge, Button, Card } from '../ui/primitives'
@@ -41,14 +41,19 @@ export function DoctorBookedAppointmentsCard() {
         void loadDoctorAppointments()
     }, [])
 
+    const pendingAppointments = useMemo(
+        () => doctorAppointments.filter((a) => a.appoinmentApproval == null),
+        [doctorAppointments],
+    )
+
     async function updateApproval(appointmentId: number, appoinmentApproval: 'APPROVED' | 'DECLINED') {
         setDoctorAppointmentsError(null)
         setUpdatingAppointmentId(appointmentId)
         try {
-            const res = await api.put<DoctorAppointmentRow>(`/appointments/doctor/me/${appointmentId}/approval`, {
+            await api.put<DoctorAppointmentRow>(`/appointments/doctor/me/${appointmentId}/approval`, {
                 appoinmentApproval,
             })
-            setDoctorAppointments((prev) => prev.map((a) => (a.id === appointmentId ? res.data : a)))
+            setDoctorAppointments((prev) => prev.filter((a) => a.id !== appointmentId))
         } catch (err: any) {
             setDoctorAppointmentsError(formatApiError(err, 'Failed to update appointment approval'))
         } finally {
@@ -61,7 +66,7 @@ export function DoctorBookedAppointmentsCard() {
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <div className="text-sm font-semibold text-slate-900">Booked patients</div>
-                    <div className="text-xs text-slate-500">Appointments booked to you (status ignored for now).</div>
+                    <div className="text-xs text-slate-500">Pending approvals only. Approved/declined items are removed from this list.</div>
                 </div>
                 <Button variant="secondary" onClick={loadDoctorAppointments} disabled={doctorAppointmentsLoading}>
                     {doctorAppointmentsLoading ? 'Loading…' : 'Refresh'}
@@ -84,13 +89,13 @@ export function DoctorBookedAppointmentsCard() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
-                        {doctorAppointments.map((a) => (
+                        {pendingAppointments.map((a) => (
                             <tr key={a.id} className="hover:bg-slate-50">
                                 <td className="px-3 py-3 font-mono text-xs text-slate-700">{a.id}</td>
                                 <td className="px-3 py-3 font-mono text-xs text-slate-700">{a.patientId}</td>
                                 <td className="px-3 py-3 font-mono text-xs text-slate-700">{new Date(a.slotTime).toLocaleString()}</td>
                                 <td className="px-3 py-3">
-                                    {a.appoinmentApproval ? <Badge>{a.appoinmentApproval}</Badge> : <span className="text-xs text-slate-500">Pending</span>}
+                                    <span className="text-xs text-slate-500">Pending</span>
                                 </td>
                                 <td className="px-3 py-3">
                                     <div className="flex flex-wrap gap-2">
@@ -112,10 +117,10 @@ export function DoctorBookedAppointmentsCard() {
                                 </td>
                             </tr>
                         ))}
-                        {!doctorAppointmentsLoading && doctorAppointments.length === 0 && !doctorAppointmentsError && (
+                        {!doctorAppointmentsLoading && pendingAppointments.length === 0 && !doctorAppointmentsError && (
                             <tr>
                                 <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
-                                    No appointments booked yet.
+                                    No pending approvals.
                                 </td>
                             </tr>
                         )}

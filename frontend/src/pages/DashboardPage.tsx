@@ -77,6 +77,14 @@ export function DashboardPage() {
               </Link>
             )}
 
+            {hasRole(user, 'DOCTOR') && (
+              <Link to="/app/doctor/appointments">
+                <Button variant="secondary" className="w-full">
+                  View my appointments
+                </Button>
+              </Link>
+            )}
+
             {hasRole(user, 'ADMIN') && (
               <Link to="/app/admin/doctors">
                 <Button variant="secondary" className="w-full">

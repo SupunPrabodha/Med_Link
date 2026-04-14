@@ -8,6 +8,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { AppointmentsPage } from './pages/AppointmentsPage'
 import { DoctorsPage } from './pages/DoctorsPage'
 import { DoctorProfilePage } from './pages/DoctorProfilePage'
+import { DoctorAppointmentsPage } from './pages/DoctorAppointmentsPage'
 import { AdminDoctorsPage } from './pages/AdminDoctorsPage'
 import { PaymentsPage } from './pages/PaymentsPage'
 import { SystemStatusPage } from './pages/SystemStatusPage'
@@ -68,6 +69,14 @@ export default function App() {
           element={
             <RequireRoles allow={['DOCTOR']}>
               <DoctorProfilePage />
+            </RequireRoles>
+          }
+        />
+        <Route
+          path="doctor/appointments"
+          element={
+            <RequireRoles allow={['DOCTOR']}>
+              <DoctorAppointmentsPage />
             </RequireRoles>
           }
         />
