@@ -10,6 +10,8 @@ import java.util.List;
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
 	List<Appointment> findByPatientId(Long patientId);
 
+	List<Appointment> findByDoctorIdOrderBySlotTimeAsc(Long doctorId);
+
 	boolean existsByDoctorIdAndSlotTimeAndStatusNot(Long doctorId, Instant slotTime, AppointmentStatus status);
 
 	List<Appointment> findByDoctorIdAndSlotTimeBetween(Long doctorId, Instant from, Instant to);

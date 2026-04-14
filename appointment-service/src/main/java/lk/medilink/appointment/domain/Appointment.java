@@ -24,6 +24,10 @@ public class Appointment {
 	@Column(nullable = false)
 	private AppointmentStatus status;
 
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = true)
+	private AppointmentApproval appoinmentApproval;
+
 	protected Appointment() {
 	}
 
@@ -54,8 +58,16 @@ public class Appointment {
 		return status;
 	}
 
+	public AppointmentApproval getAppoinmentApproval() {
+		return appoinmentApproval;
+	}
+
 	public void setStatus(AppointmentStatus status) {
 		this.status = status;
+	}
+
+	public void setAppoinmentApproval(AppointmentApproval appoinmentApproval) {
+		this.appoinmentApproval = appoinmentApproval;
 	}
 }
 

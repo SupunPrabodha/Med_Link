@@ -29,6 +29,22 @@ spring:
           uri: lb://payment-service
           predicates:
             - Path=/api/payments/callback/payhere
+        - id: appointment-doctor-view
+          uri: lb://appointment-service
+          predicates:
+            - Path=/api/appointments/doctor/me
+          filters:
+            - name: JwtAuthGatewayFilter
+              args:
+                requiredRoles: ["DOCTOR"]
+        - id: appointment-doctor-actions
+          uri: lb://appointment-service
+          predicates:
+            - Path=/api/appointments/doctor/me/**
+          filters:
+            - name: JwtAuthGatewayFilter
+              args:
+                requiredRoles: ["DOCTOR"]
         - id: appointment-service
           uri: lb://appointment-service
           predicates:

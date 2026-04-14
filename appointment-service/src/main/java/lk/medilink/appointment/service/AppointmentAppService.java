@@ -1,6 +1,7 @@
 package lk.medilink.appointment.service;
 
 import lk.medilink.appointment.domain.Appointment;
+import lk.medilink.appointment.domain.AppointmentApproval;
 import lk.medilink.appointment.domain.AppointmentStatus;
 import lk.medilink.appointment.messaging.AppointmentEvents;
 import lk.medilink.appointment.messaging.RabbitConfig;
@@ -15,6 +16,10 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -147,6 +152,60 @@ public class AppointmentAppService {
 
 	public List<Appointment> listForPatient(Long patientId) {
 		return repo.findByPatientId(patientId);
+	}
+
+	public List<Appointment> listForDoctorUser(Long doctorUserId) {
+		Long doctorId = resolveDoctorIdForUser(doctorUserId);
+		return repo.findByDoctorIdOrderBySlotTimeAsc(doctorId);
+	}
+
+	@Transactional
+	public Appointment updateApprovalForDoctorUser(Long appointmentId, Long doctorUserId, AppointmentApproval appoinmentApproval) {
+		if (appoinmentApproval == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "appoinmentApproval is required");
+		}
+
+		Long doctorId = resolveDoctorIdForUser(doctorUserId);
+		Appointment appt = repo.findById(appointmentId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment not found"));
+
+		if (!doctorId.equals(appt.getDoctorId())) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed");
+		}
+
+		appt.setAppoinmentApproval(appoinmentApproval);
+		return appt;
+	}
+
+	private Long resolveDoctorIdForUser(Long doctorUserId) {
+		try {
+			String uri = UriComponentsBuilder.fromHttpUrl(doctorBaseUrl)
+					.path("/api/doctors/me/profile")
+					.toUriString();
+
+			HttpHeaders headers = new HttpHeaders();
+			headers.set("X-User-Id", String.valueOf(doctorUserId));
+
+			ResponseEntity<DoctorProfileResponse> resp = rest.exchange(
+					uri,
+					HttpMethod.GET,
+					new HttpEntity<>(headers),
+					DoctorProfileResponse.class
+			);
+
+			DoctorProfileResponse body = resp.getBody();
+			if (body == null || body.id() == null) {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor profile not found");
+			}
+			return body.id();
+		} catch (ResponseStatusException ex) {
+			throw ex;
+		} catch (RestClientException ex) {
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Doctor service unavailable");
+		}
+	}
+
+	public record DoctorProfileResponse(Long id) {
 	}
 }
 

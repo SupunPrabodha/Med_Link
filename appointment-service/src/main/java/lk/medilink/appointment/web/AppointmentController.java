@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lk.medilink.appointment.domain.Appointment;
 import lk.medilink.appointment.service.AppointmentAppService;
 import lk.medilink.appointment.web.dto.CreateAppointmentRequest;
+import lk.medilink.appointment.web.dto.UpdateAppointmentApprovalRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +30,18 @@ public class AppointmentController {
 	@GetMapping
 	public List<Appointment> myAppointments(@RequestHeader("X-User-Id") Long patientId) {
 		return service.listForPatient(patientId);
+	}
+
+	@GetMapping("/doctor/me")
+	public List<Appointment> myDoctorAppointments(@RequestHeader("X-User-Id") Long doctorUserId) {
+		return service.listForDoctorUser(doctorUserId);
+	}
+
+	@PutMapping("/doctor/me/{id}/approval")
+	public Appointment updateDoctorAppointmentApproval(@RequestHeader("X-User-Id") Long doctorUserId,
+	                                                  @PathVariable("id") Long appointmentId,
+	                                                  @Valid @RequestBody UpdateAppointmentApprovalRequest req) {
+		return service.updateApprovalForDoctorUser(appointmentId, doctorUserId, req.appoinmentApproval());
 	}
 
 	@GetMapping("/available-slots")
