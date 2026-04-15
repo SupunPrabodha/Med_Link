@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { hasRole, useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
 import { Alert, Badge, Button, Card, Label, Select } from '../ui/primitives'
@@ -19,6 +20,9 @@ type Appointment = {
 }
 
 export function AppointmentsPage() {
+  const { user } = useAuth()
+  const isAdmin = hasRole(user, 'ADMIN')
+
   const [rows, setRows] = useState<Appointment[]>([])
   const [doctors, setDoctors] = useState<DoctorOption[]>([])
   const [doctorId, setDoctorId] = useState('')
@@ -64,10 +68,8 @@ export function AppointmentsPage() {
     setLoading(true)
     setError(null)
     try {
-      const [appts, docs] = await Promise.all([
-        api.get<Appointment[]>('/appointments'),
-        api.get<DoctorOption[]>('/doctors'),
-      ])
+      const apptsReq = isAdmin ? api.get<Appointment[]>('/admin/appointments') : api.get<Appointment[]>('/appointments')
+      const [appts, docs] = await Promise.all([apptsReq, api.get<DoctorOption[]>('/doctors')])
       setRows(appts.data)
       setDoctors(docs.data)
     } catch (err: any) {
@@ -114,9 +116,9 @@ export function AppointmentsPage() {
   async function cancel(id: number) {
     setError(null)
     try {
-      await api.delete(`/appointments/${id}`)
+      await api.delete(isAdmin ? `/admin/appointments/${id}` : `/appointments/${id}`)
       await refresh()
-      await refreshSlots()
+      if (!isAdmin) await refreshSlots()
     } catch (err: any) {
       setError(formatApiError(err, 'Cancel failed'))
     }
@@ -127,8 +129,8 @@ export function AppointmentsPage() {
   }, [])
 
   useEffect(() => {
-    void refreshSlots()
-  }, [doctorId])
+    if (!isAdmin) void refreshSlots()
+  }, [doctorId, isAdmin])
 
   return (
     <div className="space-y-6">
@@ -136,74 +138,74 @@ export function AppointmentsPage() {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <div className="text-sm font-semibold text-slate-900">Appointments</div>
-            <div className="text-xs text-slate-500">Create and manage patient appointments</div>
+            <div className="text-xs text-slate-500">
+              {isAdmin ? 'Admin view: manage platform appointments' : 'Create and manage patient appointments'}
+            </div>
           </div>
           <Button variant="secondary" onClick={refresh} disabled={loading}>
             {loading ? 'Loading…' : 'Refresh'}
           </Button>
         </div>
 
-        <div className="mt-4 grid gap-4 md:grid-cols-3">
-          <div>
-            <Label>Doctor</Label>
-            <div className="mt-1">
-              <Select
-                value={doctorId}
-                onChange={(e) => {
-                  setDoctorId(e.target.value)
-                }}
-                disabled={loading}
-              >
-                <option value="">Select a verified doctor…</option>
-                {doctors
-                  .filter((d) => d.status === 'VERIFIED')
-                  .map((d) => (
-                    <option key={d.id} value={String(d.id)}>
-                      {d.fullName} — {d.specialization} (ID {d.id})
+        {!isAdmin && (
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            <div>
+              <Label>Doctor</Label>
+              <div className="mt-1">
+                <Select
+                  value={doctorId}
+                  onChange={(e) => {
+                    setDoctorId(e.target.value)
+                  }}
+                  disabled={loading}
+                >
+                  <option value="">Select a verified doctor…</option>
+                  {doctors
+                    .filter((d) => d.status === 'VERIFIED')
+                    .map((d) => (
+                      <option key={d.id} value={String(d.id)}>
+                        {d.fullName} — {d.specialization} (ID {d.id})
+                      </option>
+                    ))}
+                </Select>
+              </div>
+              {doctors.length === 0 && (
+                <div className="mt-2 text-xs text-slate-500">
+                  No verified doctors available yet. Ask an admin to approve a doctor profile.
+                </div>
+              )}
+            </div>
+            <div>
+              <Label>Available slots</Label>
+              <div className="mt-1">
+                <Select value={slotTime} onChange={(e) => setSlotTime(e.target.value)} disabled={loading || slotsLoading || !doctorId.trim()}>
+                  <option value="">
+                    {!doctorId.trim()
+                      ? 'Select a doctor first…'
+                      : slotsLoading
+                        ? 'Loading slots…'
+                        : availableSlots.length === 0
+                          ? 'No available slots'
+                          : 'Select a slot…'}
+                  </option>
+                  {availableSlots.map((iso) => (
+                    <option key={iso} value={iso}>
+                      {new Date(iso).toLocaleString()}
                     </option>
                   ))}
-              </Select>
-            </div>
-            {doctors.length === 0 && (
-              <div className="mt-2 text-xs text-slate-500">
-                No verified doctors available yet. Ask an admin to approve a doctor profile.
+                </Select>
               </div>
-            )}
-          </div>
-          <div>
-            <Label>Available slots</Label>
-            <div className="mt-1">
-              <Select
-                value={slotTime}
-                onChange={(e) => setSlotTime(e.target.value)}
-                disabled={loading || slotsLoading || !doctorId.trim()}
-              >
-                <option value="">
-                  {!doctorId.trim()
-                    ? 'Select a doctor first…'
-                    : slotsLoading
-                      ? 'Loading slots…'
-                      : availableSlots.length === 0
-                        ? 'No available slots'
-                        : 'Select a slot…'}
-                </option>
-                {availableSlots.map((iso) => (
-                  <option key={iso} value={iso}>
-                    {new Date(iso).toLocaleString()}
-                  </option>
-                ))}
-              </Select>
+              {doctorId.trim() && !slotsLoading && availableSlots.length === 0 && (
+                <div className="mt-2 text-xs text-slate-500">This doctor has no availability set (or all slots are booked).</div>
+              )}
             </div>
-            {doctorId.trim() && !slotsLoading && availableSlots.length === 0 && (
-              <div className="mt-2 text-xs text-slate-500">This doctor has no availability set (or all slots are booked).</div>
-            )}
+            <div className="flex items-end">
+              <Button className="w-full" onClick={create} disabled={loading || slotsLoading || !doctorId.trim() || !slotTime.trim()}>
+                Create
+              </Button>
+            </div>
           </div>
-          <div className="flex items-end">
-            <Button className="w-full" onClick={create} disabled={loading || slotsLoading || !doctorId.trim() || !slotTime.trim()}>
-              Create
-            </Button>
-          </div>
-        </div>
+        )}
 
         {error && (
           <div className="mt-4">
@@ -218,6 +220,7 @@ export function AppointmentsPage() {
             <thead className="bg-slate-50 text-xs text-slate-600">
               <tr>
                 <th className="px-3 py-2 font-semibold">ID</th>
+                {isAdmin && <th className="px-3 py-2 font-semibold">Patient ID</th>}
                 <th className="px-3 py-2 font-semibold">Doctor ID</th>
                 <th className="px-3 py-2 font-semibold">Slot</th>
                 <th className="px-3 py-2 font-semibold">Status</th>
@@ -228,6 +231,7 @@ export function AppointmentsPage() {
               {rows.map((a) => (
                 <tr key={a.id} className="hover:bg-slate-50">
                   <td className="px-3 py-3 font-mono text-xs text-slate-700">{a.id}</td>
+                  {isAdmin && <td className="px-3 py-3 font-mono text-xs text-slate-700">{a.patientId}</td>}
                   <td className="px-3 py-3 font-mono text-xs text-slate-700">{a.doctorId}</td>
                   <td className="px-3 py-3 font-mono text-xs text-slate-700">{new Date(a.slotTime).toLocaleString()}</td>
                   <td className="px-3 py-3">
@@ -242,7 +246,7 @@ export function AppointmentsPage() {
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
+                  <td colSpan={isAdmin ? 6 : 5} className="px-3 py-8 text-center text-slate-500">
                     No appointments yet.
                   </td>
                 </tr>
@@ -254,7 +258,15 @@ export function AppointmentsPage() {
 
       <Card>
         <div className="text-xs text-slate-500">
-          Note: payments are based on <span className="font-mono">appointmentId</span>. Create an appointment first.
+          {isAdmin ? (
+            <span>
+              Note: canceling appointments updates status and publishes events for notifications.
+            </span>
+          ) : (
+            <span>
+              Note: payments are based on <span className="font-mono">appointmentId</span>. Create an appointment first.
+            </span>
+          )}
         </div>
       </Card>
     </div>

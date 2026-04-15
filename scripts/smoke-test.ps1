@@ -40,7 +40,7 @@ function Wait-ForHttp {
   throw "Timed out waiting for $Name (last HTTP status: $last)"
 }
 
-Write-Host "[1/6] Starting infrastructure (docker compose)..."
+Write-Host "[1/7] Starting infrastructure (docker compose)..."
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 Set-Location $repoRoot
 
@@ -64,7 +64,7 @@ if ($LASTEXITCODE -ne 0) {
   throw "Docker/Compose failed to start infrastructure. If this is a Docker Desktop/BuildKit issue, try restarting Docker Desktop or running: docker builder prune"
 }
 
-Write-Host "[2/6] Waiting for gateway to respond..."
+Write-Host "[2/7] Waiting for gateway to respond..."
 $suffix = ([guid]::NewGuid().ToString('N')).Substring(0, 8)
 $pw = "Passw0rd!"
 
@@ -74,7 +74,7 @@ Wait-ForHttp -Name "gateway health" -OkStatuses @(200) -Request {
   Invoke-WebRequest -UseBasicParsing "$gateway/actuator/health" -TimeoutSec 2
 }
 
-Write-Host "[3/6] Waiting for service discovery + routes to be ready..."
+Write-Host "[3/7] Waiting for service discovery + routes to be ready..."
 
 # Wait for Eureka UI to come up (service-discovery module)
 Wait-ForHttp -Name "service-discovery" -OkStatuses @(200) -Request {
@@ -140,7 +140,7 @@ Wait-ForHttp -Name "patient route" -OkStatuses @(200, 401, 403, 404) -Request {
   Invoke-WebRequest -UseBasicParsing "$gateway/api/patients/ping" -TimeoutSec 2
 }
 
-Write-Host "[4/6] Running workflow via gateway (admin+doctor verification -> appointment -> payment -> confirmation)..."
+Write-Host "[4/7] Running workflow via gateway (admin+doctor verification -> appointment -> payment -> confirmation)..."
 
 function Register-User($email, $role) {
   $body = @{ email = $email; password = $pw; role = $role } | ConvertTo-Json
@@ -164,6 +164,22 @@ $patientHeaders = @{ Authorization = "Bearer $($patient.accessToken)" }
 try {
   Invoke-RestMethod -Method Get -Uri "$gateway/api/admin/doctors/pending" -Headers $patientHeaders | Out-Null
   throw "RBAC check failed: PATIENT was able to call /api/admin/doctors/pending"
+} catch {
+  # Expected: 403
+}
+
+# RBAC sanity check: patient must NOT access admin user management
+try {
+  Invoke-RestMethod -Method Get -Uri "$gateway/api/admin/users" -Headers $patientHeaders | Out-Null
+  throw "RBAC check failed: PATIENT was able to call /api/admin/users"
+} catch {
+  # Expected: 403
+}
+
+# RBAC sanity check: patient must NOT access admin appointment management
+try {
+  Invoke-RestMethod -Method Get -Uri "$gateway/api/admin/appointments" -Headers $patientHeaders | Out-Null
+  throw "RBAC check failed: PATIENT was able to call /api/admin/appointments"
 } catch {
   # Expected: 403
 }
@@ -246,7 +262,7 @@ $notifyBody = @{ merchant_id = $merchantId; order_id = $orderId; payhere_amount 
 $notifyResp = Invoke-RestMethod -Method Post -Uri "$gateway/api/payments/callback/payhere" -ContentType "application/x-www-form-urlencoded" -Body $notifyBody
 Write-Host "PayHere notify response: $notifyResp"
 
-Write-Host "[5/6] Waiting for async confirmation (RabbitMQ event -> appointment CONFIRMED)..."
+Write-Host "[5/7] Waiting for async confirmation (RabbitMQ event -> appointment CONFIRMED)..."
 $deadline = (Get-Date).AddSeconds(30)
 $latest = $null
 while ((Get-Date) -lt $deadline) {
@@ -267,5 +283,50 @@ if ($latest.status -ne "CONFIRMED") {
   throw "Expected appointment status CONFIRMED after PayHere notify; got '$($latest.status)'."
 }
 
-Write-Host "[6/6] Done. (doctor.verified, payment.completed, appointment.confirmed should have been emitted/consumed)."
+Write-Host "[6/7] Verifying admin management endpoints (users + appointments)..."
+
+# Admin: users list/search
+$adminUsers = Invoke-RestMethod -Method Get -Uri "$gateway/api/admin/users?q=$suffix" -Headers $adminHeaders
+$adminUsersArr = @($adminUsers)
+
+$expected = @(
+  @{ email = "admin_$suffix@demo.com"; role = "ADMIN" },
+  @{ email = "doctor_$suffix@demo.com"; role = "DOCTOR" },
+  @{ email = "patient_$suffix@demo.com"; role = "PATIENT" }
+)
+
+foreach ($e in $expected) {
+  $u = $adminUsersArr | Where-Object { $_.email -eq $e.email } | Select-Object -First 1
+  if (-not $u) {
+    throw "Admin user search did not return expected user email='$($e.email)'"
+  }
+  if ($u.role -ne $e.role) {
+    throw "Expected role '$($e.role)' for user '$($e.email)'; got '$($u.role)'"
+  }
+}
+
+# Admin: appointments list + cancel
+$allAdminAppts = Invoke-RestMethod -Method Get -Uri "$gateway/api/admin/appointments" -Headers $adminHeaders
+$allAdminApptsArr = @($allAdminAppts)
+$adminFound = $allAdminApptsArr | Where-Object { $_.id -eq $appt.id } | Select-Object -First 1
+if (-not $adminFound) {
+  throw "Admin appointments list did not include created appointment id=$($appt.id)"
+}
+
+$cancelled = Invoke-RestMethod -Method Delete -Uri "$gateway/api/admin/appointments/$($appt.id)" -Headers $adminHeaders
+Write-Host "Admin cancelled appointment id=$($cancelled.id) status=$($cancelled.status)"
+if ($cancelled.status -ne "CANCELLED") {
+  throw "Expected admin-cancelled appointment to be CANCELLED; got '$($cancelled.status)'"
+}
+
+$apptsAfterCancel = Invoke-RestMethod -Method Get -Uri "$gateway/api/appointments" -Headers $patientHeaders
+$after = @($apptsAfterCancel) | Where-Object { $_.id -eq $appt.id } | Select-Object -First 1
+if (-not $after) {
+  throw "Patient appointments did not contain appointment id=$($appt.id) after admin cancel"
+}
+if ($after.status -ne "CANCELLED") {
+  throw "Expected patient to see CANCELLED after admin cancel; got '$($after.status)'"
+}
+
+Write-Host "[7/7] Done. (doctor.verified, payment.completed, appointment.confirmed/cancelled, admin.users/appointments verified)."
 

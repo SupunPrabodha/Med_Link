@@ -11,6 +11,7 @@ import { DoctorProfilePage } from './pages/DoctorProfilePage'
 import { DoctorAppointmentsPage } from './pages/DoctorAppointmentsPage'
 import { DoctorPatientsPage } from './pages/DoctorPatientsPage'
 import { AdminDoctorsPage } from './pages/AdminDoctorsPage'
+import { AdminUsersPage } from './pages/AdminUsersPage'
 import { PaymentsPage } from './pages/PaymentsPage'
 import { SystemStatusPage } from './pages/SystemStatusPage'
 import { PatientProfilePage } from './pages/PatientProfilePage'
@@ -94,6 +95,14 @@ export default function App() {
           element={
             <RequireRoles allow={['ADMIN']}>
               <AdminDoctorsPage />
+            </RequireRoles>
+          }
+        />
+        <Route
+          path="admin/users"
+          element={
+            <RequireRoles allow={['ADMIN']}>
+              <AdminUsersPage />
             </RequireRoles>
           }
         />

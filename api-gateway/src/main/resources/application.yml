@@ -56,9 +56,16 @@ spring:
         - id: appointment-admin
           uri: lb://appointment-service
           predicates:
-            - Path=/api/admin/appointments/**
+            - Path=/api/admin/appointments,/api/admin/appointments/**
           filters:
-            - StripPrefix=2
+            - name: JwtAuthGatewayFilter
+              args:
+                requiredRoles: ["ADMIN"]
+        - id: auth-admin
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/admin/users,/api/admin/users/**
+          filters:
             - name: JwtAuthGatewayFilter
               args:
                 requiredRoles: ["ADMIN"]

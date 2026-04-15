@@ -15,6 +15,12 @@ This repository contains a **marks-aligned, runnable microservices skeleton** de
 
 > Note: The full product scope in `requirements.md` (telemedicine, AI symptom checker, etc.) is included as **architecture** and **extensible placeholders**. The runnable implementation focuses on core DS patterns + primary workflows (Auth + Doctor verification + Appointment + Payments + Notifications).
 
+Admin workflows implemented in UI (marker-friendly):
+- Doctor verification (approve/reject)
+- User management (list/search registered accounts)
+- Appointment management (admin can view/cancel appointments)
+- Platform status checks
+
 ---
 
 ## ✅ Implemented Services (runnable)
