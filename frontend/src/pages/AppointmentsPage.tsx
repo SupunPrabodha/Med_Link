@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Badge, Button, Card, Label } from '../ui/primitives'
+import { Alert, Badge, Button, Card, Label, Select } from '../ui/primitives'
 
 type DoctorOption = {
   id: number
@@ -147,8 +147,7 @@ export function AppointmentsPage() {
           <div>
             <Label>Doctor</Label>
             <div className="mt-1">
-              <select
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+              <Select
                 value={doctorId}
                 onChange={(e) => {
                   setDoctorId(e.target.value)
@@ -163,7 +162,7 @@ export function AppointmentsPage() {
                       {d.fullName} — {d.specialization} (ID {d.id})
                     </option>
                   ))}
-              </select>
+              </Select>
             </div>
             {doctors.length === 0 && (
               <div className="mt-2 text-xs text-slate-500">
@@ -174,8 +173,7 @@ export function AppointmentsPage() {
           <div>
             <Label>Available slots</Label>
             <div className="mt-1">
-              <select
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+              <Select
                 value={slotTime}
                 onChange={(e) => setSlotTime(e.target.value)}
                 disabled={loading || slotsLoading || !doctorId.trim()}
@@ -194,7 +192,7 @@ export function AppointmentsPage() {
                     {new Date(iso).toLocaleString()}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             {doctorId.trim() && !slotsLoading && availableSlots.length === 0 && (
               <div className="mt-2 text-xs text-slate-500">This doctor has no availability set (or all slots are booked).</div>
@@ -207,7 +205,11 @@ export function AppointmentsPage() {
           </div>
         </div>
 
-        {error && <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error}</div>}
+        {error && (
+          <div className="mt-4">
+            <Alert tone="error">{error}</Alert>
+          </div>
+        )}
       </Card>
 
       <Card>
@@ -232,7 +234,7 @@ export function AppointmentsPage() {
                     <Badge>{a.status}</Badge>
                   </td>
                   <td className="px-3 py-3">
-                    <Button variant="secondary" onClick={() => cancel(a.id)}>
+                    <Button variant="danger" onClick={() => cancel(a.id)}>
                       Cancel
                     </Button>
                   </td>
