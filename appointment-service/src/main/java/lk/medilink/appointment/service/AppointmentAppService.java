@@ -150,6 +150,28 @@ public class AppointmentAppService {
 		if (!isAdmin && !appt.getPatientId().equals(requesterPatientId)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed");
 		}
+		if (appt.getStatus() == AppointmentStatus.CANCELLED) {
+			return appt;
+		}
+		appt.setStatus(AppointmentStatus.CANCELLED);
+		rabbit.convertAndSend(RabbitConfig.EXCHANGE, "appointment.cancelled",
+				new AppointmentEvents.AppointmentCancelled(appt.getId(), appt.getPatientId(), appt.getDoctorId(), appt.getSlotTime()));
+		return appt;
+	}
+
+	@Transactional
+	public Appointment cancelAsDoctorUser(Long appointmentId, Long doctorUserId) {
+		Appointment appt = repo.findById(appointmentId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment not found"));
+
+		Long doctorId = resolveDoctorIdForUser(doctorUserId);
+		if (!doctorId.equals(appt.getDoctorId())) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed");
+		}
+		if (appt.getStatus() == AppointmentStatus.CANCELLED) {
+			return appt;
+		}
+
 		appt.setStatus(AppointmentStatus.CANCELLED);
 		rabbit.convertAndSend(RabbitConfig.EXCHANGE, "appointment.cancelled",
 				new AppointmentEvents.AppointmentCancelled(appt.getId(), appt.getPatientId(), appt.getDoctorId(), appt.getSlotTime()));
@@ -272,7 +294,18 @@ public class AppointmentAppService {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed");
 		}
 
+		if (appt.getStatus() == AppointmentStatus.CONFIRMED && appoinmentApproval == AppointmentApproval.DECLINED) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot decline a confirmed appointment; cancel it instead");
+		}
+
 		appt.setAppoinmentApproval(appoinmentApproval);
+
+		if (appoinmentApproval == AppointmentApproval.DECLINED && appt.getStatus() != AppointmentStatus.CANCELLED) {
+			appt.setStatus(AppointmentStatus.CANCELLED);
+			rabbit.convertAndSend(RabbitConfig.EXCHANGE, "appointment.cancelled",
+					new AppointmentEvents.AppointmentCancelled(appt.getId(), appt.getPatientId(), appt.getDoctorId(), appt.getSlotTime()));
+		}
+
 		return appt;
 	}
 

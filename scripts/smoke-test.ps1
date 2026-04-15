@@ -230,6 +230,18 @@ $apptBody = @{ doctorId = $doctorId; slotTime = $slot } | ConvertTo-Json
 $appt = Invoke-RestMethod -Method Post -Uri "$gateway/api/appointments" -ContentType "application/json" -Headers $patientHeaders -Body $apptBody
 Write-Host "Created appointment id=$($appt.id) status=$($appt.status)"
 
+# Doctor approves the appointment (required before payment)
+$doctorAppts = Invoke-RestMethod -Method Get -Uri "$gateway/api/appointments/doctor/me" -Headers $doctorHeaders
+$docAppt = @($doctorAppts) | Where-Object { $_.id -eq $appt.id } | Select-Object -First 1
+if (-not $docAppt) { throw "Doctor appointments list did not include created appointment id=$($appt.id)" }
+
+$approveBody = @{ appoinmentApproval = "APPROVED" } | ConvertTo-Json
+$approvedAppt = Invoke-RestMethod -Method Put -Uri "$gateway/api/appointments/doctor/me/$($appt.id)/approval" -ContentType "application/json" -Headers $doctorHeaders -Body $approveBody
+Write-Host "Doctor approval: id=$($approvedAppt.id) approval=$($approvedAppt.appoinmentApproval) status=$($approvedAppt.status)"
+if ($approvedAppt.appoinmentApproval -ne "APPROVED") {
+  throw "Expected doctor approval APPROVED; got '$($approvedAppt.appoinmentApproval)'"
+}
+
 # Create PayHere payment intent
 $intentBody = @{ appointmentId = $appt.id; amount = 1000.00; currency = "LKR" } | ConvertTo-Json
 $intent = Invoke-RestMethod -Method Post -Uri "$gateway/api/payments/intents/payhere" -ContentType "application/json" -Headers $patientHeaders -Body $intentBody

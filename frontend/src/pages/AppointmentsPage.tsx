@@ -17,6 +17,7 @@ type Appointment = {
   doctorId: number
   slotTime: string
   status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED'
+  appoinmentApproval?: 'APPROVED' | 'DECLINED' | null
 }
 
 export function AppointmentsPage() {
@@ -223,6 +224,7 @@ export function AppointmentsPage() {
                 {isAdmin && <th className="px-3 py-2 font-semibold">Patient ID</th>}
                 <th className="px-3 py-2 font-semibold">Doctor ID</th>
                 <th className="px-3 py-2 font-semibold">Slot</th>
+                <th className="px-3 py-2 font-semibold">Doctor approval</th>
                 <th className="px-3 py-2 font-semibold">Status</th>
                 <th className="px-3 py-2 font-semibold">Action</th>
               </tr>
@@ -235,10 +237,13 @@ export function AppointmentsPage() {
                   <td className="px-3 py-3 font-mono text-xs text-slate-700">{a.doctorId}</td>
                   <td className="px-3 py-3 font-mono text-xs text-slate-700">{new Date(a.slotTime).toLocaleString()}</td>
                   <td className="px-3 py-3">
+                    {a.appoinmentApproval ? <Badge>{a.appoinmentApproval}</Badge> : <span className="text-xs text-slate-500">Pending</span>}
+                  </td>
+                  <td className="px-3 py-3">
                     <Badge>{a.status}</Badge>
                   </td>
                   <td className="px-3 py-3">
-                    <Button variant="danger" onClick={() => cancel(a.id)}>
+                    <Button variant="danger" onClick={() => cancel(a.id)} disabled={a.status === 'CANCELLED'}>
                       Cancel
                     </Button>
                   </td>
@@ -246,7 +251,7 @@ export function AppointmentsPage() {
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={isAdmin ? 6 : 5} className="px-3 py-8 text-center text-slate-500">
+                  <td colSpan={isAdmin ? 7 : 6} className="px-3 py-8 text-center text-slate-500">
                     No appointments yet.
                   </td>
                 </tr>

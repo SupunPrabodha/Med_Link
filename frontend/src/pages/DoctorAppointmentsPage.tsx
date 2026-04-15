@@ -12,13 +12,14 @@ type DoctorAppointmentRow = {
     appoinmentApproval?: 'APPROVED' | 'DECLINED' | null
 }
 
-type FilterMode = 'APPROVED' | 'CONFIRMED'
+type FilterMode = 'PENDING_APPROVAL' | 'APPROVED' | 'CONFIRMED' | 'CANCELLED'
 
 export function DoctorAppointmentsPage() {
     const [rows, setRows] = useState<DoctorAppointmentRow[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [filter, setFilter] = useState<FilterMode>('APPROVED')
+    const [filter, setFilter] = useState<FilterMode>('PENDING_APPROVAL')
+    const [updatingId, setUpdatingId] = useState<number | null>(null)
 
     async function load() {
         setLoading(true)
@@ -43,9 +44,43 @@ export function DoctorAppointmentsPage() {
         void load()
     }, [])
 
+    async function updateApproval(appointmentId: number, appoinmentApproval: 'APPROVED' | 'DECLINED') {
+        setError(null)
+        setUpdatingId(appointmentId)
+        try {
+            const res = await api.put<DoctorAppointmentRow>(`/appointments/doctor/me/${appointmentId}/approval`, { appoinmentApproval })
+            const updated = res.data
+            setRows((prev) => prev.map((r) => (r.id === appointmentId ? updated : r)))
+        } catch (err: any) {
+            setError(formatApiError(err, 'Failed to update approval'))
+        } finally {
+            setUpdatingId(null)
+        }
+    }
+
+    async function cancelAppointment(appointmentId: number) {
+        setError(null)
+        setUpdatingId(appointmentId)
+        try {
+            const res = await api.delete<DoctorAppointmentRow>(`/appointments/doctor/me/${appointmentId}`)
+            const updated = res.data
+            setRows((prev) => prev.map((r) => (r.id === appointmentId ? updated : r)))
+        } catch (err: any) {
+            setError(formatApiError(err, 'Failed to cancel appointment'))
+        } finally {
+            setUpdatingId(null)
+        }
+    }
+
     const filteredRows = useMemo(() => {
+        if (filter === 'PENDING_APPROVAL') {
+            return rows.filter((r) => r.appoinmentApproval == null && r.status !== 'CANCELLED')
+        }
         if (filter === 'APPROVED') {
-            return rows.filter((r) => r.appoinmentApproval === 'APPROVED' && r.status !== 'CONFIRMED')
+            return rows.filter((r) => r.appoinmentApproval === 'APPROVED' && r.status !== 'CONFIRMED' && r.status !== 'CANCELLED')
+        }
+        if (filter === 'CANCELLED') {
+            return rows.filter((r) => r.status === 'CANCELLED')
         }
         return rows.filter((r) => r.status === 'CONFIRMED')
     }, [rows, filter])
@@ -56,7 +91,7 @@ export function DoctorAppointmentsPage() {
                 <div className="flex flex-wrap items-end justify-between gap-3">
                     <div>
                         <div className="text-sm font-semibold text-slate-900">Doctor appointments</div>
-                        <div className="text-xs text-slate-500">View your approved appointments or only confirmed ones.</div>
+                        <div className="text-xs text-slate-500">Review booking requests, track approvals, and cancel appointments if needed.</div>
                     </div>
                     <Button variant="secondary" onClick={load} disabled={loading}>
                         {loading ? 'Loading…' : 'Refresh'}
@@ -70,10 +105,12 @@ export function DoctorAppointmentsPage() {
                             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
                             value={filter}
                             onChange={(e) => setFilter(e.target.value as FilterMode)}
-                            disabled={loading}
+                            disabled={loading || updatingId != null}
                         >
-                            <option value="APPROVED">Approved</option>
+                            <option value="PENDING_APPROVAL">Pending approval</option>
+                            <option value="APPROVED">Approved (awaiting payment)</option>
                             <option value="CONFIRMED">Confirmed</option>
+                            <option value="CANCELLED">Cancelled</option>
                         </select>
                     </div>
                 </div>
@@ -91,26 +128,73 @@ export function DoctorAppointmentsPage() {
                                 <th className="px-3 py-2 font-semibold">Slot time</th>
                                 <th className="px-3 py-2 font-semibold">Approval</th>
                                 <th className="px-3 py-2 font-semibold">Status</th>
+                                <th className="px-3 py-2 font-semibold">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
-                            {filteredRows.map((a) => (
-                                <tr key={a.id} className="hover:bg-slate-50">
-                                    <td className="px-3 py-3 font-mono text-xs text-slate-700">{a.id}</td>
-                                    <td className="px-3 py-3 font-mono text-xs text-slate-700">{a.patientId}</td>
-                                    <td className="px-3 py-3 font-mono text-xs text-slate-700">{new Date(a.slotTime).toLocaleString()}</td>
-                                    <td className="px-3 py-3">
-                                        {a.appoinmentApproval ? <Badge>{a.appoinmentApproval}</Badge> : <span className="text-xs text-slate-500">Pending</span>}
-                                    </td>
-                                    <td className="px-3 py-3">
-                                        <Badge>{a.status}</Badge>
-                                    </td>
-                                </tr>
-                            ))}
+                            {filteredRows.map((a) => {
+                                const busy = updatingId === a.id
+                                const canApprove = a.status !== 'CANCELLED' && (a.appoinmentApproval == null)
+                                const canCancel = a.status !== 'CANCELLED' && a.appoinmentApproval === 'APPROVED'
+
+                                return (
+                                    <tr key={a.id} className="hover:bg-slate-50">
+                                        <td className="px-3 py-3 font-mono text-xs text-slate-700">{a.id}</td>
+                                        <td className="px-3 py-3 font-mono text-xs text-slate-700">{a.patientId}</td>
+                                        <td className="px-3 py-3 font-mono text-xs text-slate-700">{new Date(a.slotTime).toLocaleString()}</td>
+                                        <td className="px-3 py-3">
+                                            {a.appoinmentApproval ? <Badge>{a.appoinmentApproval}</Badge> : <span className="text-xs text-slate-500">Pending</span>}
+                                        </td>
+                                        <td className="px-3 py-3">
+                                            <Badge>{a.status}</Badge>
+                                        </td>
+                                        <td className="px-3 py-3">
+                                            <div className="flex flex-wrap gap-2">
+                                                {canApprove && (
+                                                    <>
+                                                        <Button
+                                                            variant="secondary"
+                                                            onClick={() => updateApproval(a.id, 'APPROVED')}
+                                                            disabled={busy || loading || updatingId != null}
+                                                        >
+                                                            {busy ? 'Working…' : 'Accept'}
+                                                        </Button>
+                                                        <Button
+                                                            variant="secondary"
+                                                            onClick={() => updateApproval(a.id, 'DECLINED')}
+                                                            disabled={busy || loading || updatingId != null}
+                                                        >
+                                                            {busy ? 'Working…' : 'Reject'}
+                                                        </Button>
+                                                    </>
+                                                )}
+
+                                                {canCancel && (
+                                                    <Button
+                                                        variant="danger"
+                                                        onClick={() => cancelAppointment(a.id)}
+                                                        disabled={busy || loading || updatingId != null}
+                                                    >
+                                                        {busy ? 'Cancelling…' : 'Cancel'}
+                                                    </Button>
+                                                )}
+
+                                                {!canApprove && !canCancel && <span className="text-xs text-slate-500">—</span>}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
                             {!loading && filteredRows.length === 0 && (
                                 <tr>
-                                    <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
-                                        {filter === 'APPROVED' ? 'No approved appointments found.' : 'No confirmed appointments found.'}
+                                    <td colSpan={6} className="px-3 py-8 text-center text-slate-500">
+                                        {filter === 'PENDING_APPROVAL'
+                                            ? 'No pending approvals.'
+                                            : filter === 'APPROVED'
+                                                ? 'No approved appointments awaiting payment.'
+                                                : filter === 'CANCELLED'
+                                                    ? 'No cancelled appointments.'
+                                                    : 'No confirmed appointments.'}
                                     </td>
                                 </tr>
                             )}

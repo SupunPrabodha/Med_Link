@@ -8,6 +8,7 @@ type Appointment = {
   doctorId: number
   slotTime: string
   status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED'
+  appoinmentApproval?: 'APPROVED' | 'DECLINED' | null
 }
 
 type PaymentIntentResponse = {
@@ -101,7 +102,7 @@ export function PaymentsPage() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <div className="text-xs font-semibold text-slate-700">Select an appointment</div>
-              <div className="text-xs text-slate-500">Only PENDING_PAYMENT appointments can be paid</div>
+              <div className="text-xs text-slate-500">Only doctor-approved PENDING_PAYMENT appointments can be paid</div>
             </div>
             <Button variant="secondary" onClick={loadAppointments} disabled={loadingAppointments}>
               {loadingAppointments ? 'Loading…' : 'Refresh'}
@@ -121,6 +122,7 @@ export function PaymentsPage() {
                   <th className="px-3 py-2 font-semibold">ID</th>
                   <th className="px-3 py-2 font-semibold">Doctor ID</th>
                   <th className="px-3 py-2 font-semibold">Slot</th>
+                  <th className="px-3 py-2 font-semibold">Doctor approval</th>
                   <th className="px-3 py-2 font-semibold">Status</th>
                   <th className="px-3 py-2 font-semibold">Action</th>
                 </tr>
@@ -128,12 +130,16 @@ export function PaymentsPage() {
               <tbody className="divide-y divide-slate-200">
                 {appointments.map((a) => {
                   const isSelected = appointmentId === String(a.id)
-                  const payable = a.status === 'PENDING_PAYMENT'
+                  const approved = a.appoinmentApproval === 'APPROVED'
+                  const payable = a.status === 'PENDING_PAYMENT' && approved
                   return (
                     <tr key={a.id} className={isSelected ? 'bg-slate-50' : 'hover:bg-slate-50'}>
                       <td className="px-3 py-3 font-mono text-xs text-slate-700">{a.id}</td>
                       <td className="px-3 py-3 font-mono text-xs text-slate-700">{a.doctorId}</td>
                       <td className="px-3 py-3 font-mono text-xs text-slate-700">{new Date(a.slotTime).toLocaleString()}</td>
+                      <td className="px-3 py-3">
+                        {a.appoinmentApproval ? <Badge>{a.appoinmentApproval}</Badge> : <span className="text-xs text-slate-500">Pending</span>}
+                      </td>
                       <td className="px-3 py-3">
                         <Badge>{a.status}</Badge>
                       </td>
@@ -148,14 +154,14 @@ export function PaymentsPage() {
 
                 {!loadingAppointments && appointments.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
+                    <td colSpan={6} className="px-3 py-8 text-center text-slate-500">
                       No appointments found. Create an appointment first.
                     </td>
                   </tr>
                 )}
                 {loadingAppointments && appointments.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
+                    <td colSpan={6} className="px-3 py-8 text-center text-slate-500">
                       Loading appointments…
                     </td>
                   </tr>

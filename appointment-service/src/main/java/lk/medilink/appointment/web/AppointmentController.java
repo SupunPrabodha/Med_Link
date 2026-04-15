@@ -61,6 +61,12 @@ public class AppointmentController {
 		return service.downloadPatientReportForDoctorUser(doctorUserId, patientId, reportId);
 	}
 
+	@DeleteMapping("/doctor/me/{id}")
+	public Appointment cancelAsDoctor(@RequestHeader("X-User-Id") Long doctorUserId,
+	                                 @PathVariable("id") Long id) {
+		return service.cancelAsDoctorUser(id, doctorUserId);
+	}
+
 	@GetMapping("/available-slots")
 	public List<Instant> availableSlots(@RequestParam("doctorId") Long doctorId,
 	                                  @RequestParam(value = "days", required = false, defaultValue = "14") int days) {

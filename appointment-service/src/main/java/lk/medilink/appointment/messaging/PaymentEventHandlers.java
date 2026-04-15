@@ -1,6 +1,7 @@
 package lk.medilink.appointment.messaging;
 
 import lk.medilink.appointment.domain.Appointment;
+import lk.medilink.appointment.domain.AppointmentApproval;
 import lk.medilink.appointment.domain.AppointmentStatus;
 import lk.medilink.appointment.repo.AppointmentRepository;
 import org.slf4j.Logger;
@@ -41,6 +42,18 @@ public class PaymentEventHandlers {
 			return;
 		}
 		if (appt.getStatus() == AppointmentStatus.CONFIRMED) {
+			return;
+		}
+		if (appt.getStatus() == AppointmentStatus.CANCELLED) {
+			log.warn("Ignoring payment.completed for cancelled appointment: appointmentId={}", appointmentId);
+			return;
+		}
+		if (appt.getAppoinmentApproval() == null) {
+			log.warn("Ignoring payment.completed for unapproved appointment: appointmentId={}", appointmentId);
+			return;
+		}
+		if (appt.getAppoinmentApproval() == AppointmentApproval.DECLINED) {
+			log.warn("Ignoring payment.completed for declined appointment: appointmentId={}", appointmentId);
 			return;
 		}
 		appt.setStatus(AppointmentStatus.CONFIRMED);
