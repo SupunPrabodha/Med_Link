@@ -165,6 +165,10 @@ public class AppointmentAppService {
 		return repo.findByDoctorIdOrderBySlotTimeAsc(doctorId);
 	}
 
+	public List<Appointment> listAll() {
+		return repo.findAll(Sort.by(Sort.Direction.DESC, "slotTime"));
+	}
+
 	public List<DoctorPatientWithReportsResponse> listConfirmedPatientsWithReportsForDoctorUser(Long doctorUserId) {
 		Long doctorId = resolveDoctorIdForUser(doctorUserId);
 		List<Appointment> confirmedAppointments = repo.findByDoctorIdAndStatusOrderBySlotTimeAsc(doctorId, AppointmentStatus.CONFIRMED);
