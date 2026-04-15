@@ -278,6 +278,11 @@ services:
       SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-telemedicine:5432/telemedicinedb"
       SPRING_DATASOURCE_USERNAME: "telemedicine"
       SPRING_DATASOURCE_PASSWORD: "telemedicine"
+      APP_TELEMEDICINE_JITSI_DOMAIN: "meet.jit.si"
+      APP_TELEMEDICINE_JOIN_TOKEN_SECRET: "change-me-to-a-long-telemedicine-join-token-secret"
+      APP_TELEMEDICINE_JOIN_TOKEN_TTL_MINUTES: "15"
+      APP_TELEMEDICINE_JOIN_WINDOW_BEFORE_MINUTES: "10"
+      APP_TELEMEDICINE_JOIN_WINDOW_AFTER_MINUTES: "60"
     depends_on:
       service-discovery:
         condition: service_started

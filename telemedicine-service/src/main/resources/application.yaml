@@ -14,6 +14,14 @@ spring:
     username: guest
     password: guest
 
+app:
+  telemedicine:
+    jitsi-domain: meet.jit.si
+    join-token-secret: change-me-to-a-long-telemedicine-join-token-secret
+    join-token-ttl-minutes: 15
+    join-window-before-minutes: 10
+    join-window-after-minutes: 60
+
 server:
   port: 8087
 
