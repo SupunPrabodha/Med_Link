@@ -16,6 +16,7 @@ const items: NavItem[] = [
 	{ label: 'Payments', to: '/app/payments', show: (roles) => roles.includes('PATIENT') || roles.includes('ADMIN') },
 	{ label: 'Doctor Profile', to: '/app/doctor/profile', show: (roles) => roles.includes('DOCTOR') },
 	{ label: 'Doctor Verification', to: '/app/admin/doctors', show: (roles) => roles.includes('ADMIN') },
+	{ label: 'User Management', to: '/app/admin/users', show: (roles) => roles.includes('ADMIN') },
 	{ label: 'Platform Status', to: '/app/status', show: (roles) => roles.includes('ADMIN') },
 ]
 

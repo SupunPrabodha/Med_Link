@@ -21,6 +21,8 @@ Implemented UI (minimal, marker-friendly):
     - Auth (register/login)
     - Doctor onboarding (submit profile)
     - Admin doctor verification
+    - Admin user management (list/search accounts)
+    - Admin appointment management (list/cancel platform appointments)
     - Appointment create/list/cancel
     - Payment intent creation
     - System status page (health checks)

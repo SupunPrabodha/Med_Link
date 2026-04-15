@@ -24,7 +24,7 @@ COPY common/pom.xml common/pom.xml
 
 # Pre-fetch dependencies for the selected module (and its dependencies)
 # Best-effort only: this step is an optimization for Docker layer caching.
-RUN \
+RUN --mount=type=cache,target=/root/.m2,sharing=locked \
   test -n "$MODULE" \
   && i=1 \
   && while [ $i -le 3 ]; do \
@@ -42,7 +42,7 @@ RUN \
 COPY . .
 
 # Build the selected module and its dependencies
-RUN \
+RUN --mount=type=cache,target=/root/.m2,sharing=locked \
   test -n "$MODULE" \
   && i=1 \
   && while [ $i -le 5 ]; do \

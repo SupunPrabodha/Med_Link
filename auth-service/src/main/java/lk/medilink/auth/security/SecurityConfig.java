@@ -13,7 +13,15 @@ public class SecurityConfig {
 		return http
 				.csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").permitAll()
+						.requestMatchers(
+								"/api/auth/**",
+								"/api/admin/users",
+								"/api/admin/users/**",
+								"/v3/api-docs/**",
+								"/swagger-ui/**",
+								"/swagger-ui.html",
+								"/actuator/**"
+						).permitAll()
 						.anyRequest().authenticated()
 				)
 				.httpBasic(Customizer.withDefaults())
