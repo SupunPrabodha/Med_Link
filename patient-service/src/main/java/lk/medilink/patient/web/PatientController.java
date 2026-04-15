@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lk.medilink.patient.domain.MedicalReport;
 import lk.medilink.patient.domain.PatientProfile;
 import lk.medilink.patient.service.PatientAppService;
+import lk.medilink.patient.web.dto.InternalPatientWithReportsResponse;
 import lk.medilink.patient.web.dto.MedicalReportResponse;
 import lk.medilink.patient.web.dto.UpsertPatientProfileRequest;
 import org.springframework.http.HttpHeaders;
@@ -54,6 +55,22 @@ public class PatientController {
 	@GetMapping("/me/reports")
 	public List<MedicalReportResponse> listReports(@RequestHeader("X-User-Id") Long userId) {
 		return service.listReportSummaries(userId).stream().map(MedicalReportResponse::fromSummary).toList();
+	}
+
+	@GetMapping("/internal/patients-with-reports")
+	public List<InternalPatientWithReportsResponse> internalPatientsWithReports(@RequestParam("userIds") List<Long> userIds) {
+		return service.listPatientsWithReportSummaries(userIds);
+	}
+
+	@GetMapping("/internal/patients/{userId}/reports/{id}/download")
+	public ResponseEntity<byte[]> internalDownload(@PathVariable("userId") Long userId,
+	                                             @PathVariable("id") Long id) {
+		MedicalReport r = service.getReport(userId, id);
+		HttpHeaders h = new HttpHeaders();
+		h.setContentType(MediaType.parseMediaType(r.getContentType()));
+		h.setContentLength(r.getSizeBytes());
+		h.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + safeFileName(r.getFileName()) + "\"");
+		return new ResponseEntity<>(r.getData(), h, HttpStatus.OK);
 	}
 
 	@GetMapping("/me/reports/{id}/download")

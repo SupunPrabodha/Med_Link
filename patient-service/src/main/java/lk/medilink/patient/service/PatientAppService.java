@@ -5,6 +5,8 @@ import lk.medilink.patient.domain.PatientProfile;
 import lk.medilink.patient.repo.MedicalReportRepository;
 import lk.medilink.patient.repo.MedicalReportSummary;
 import lk.medilink.patient.repo.PatientProfileRepository;
+import lk.medilink.patient.web.dto.InternalPatientWithReportsResponse;
+import lk.medilink.patient.web.dto.MedicalReportResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +15,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PatientAppService {
@@ -76,6 +81,40 @@ public class PatientAppService {
 
 	public List<MedicalReportSummary> listReportSummaries(Long userId) {
 		return reports.findAllByUserIdOrderByUploadedAtDesc(userId);
+	}
+
+	public List<InternalPatientWithReportsResponse> listPatientsWithReportSummaries(List<Long> userIds) {
+		if (userIds == null || userIds.isEmpty()) {
+			return List.of();
+		}
+
+		List<Long> ids = userIds.stream()
+				.filter(id -> id != null && id > 0)
+				.distinct()
+				.toList();
+		if (ids.isEmpty()) {
+			return List.of();
+		}
+
+		Map<Long, PatientProfile> profilesByUserId = new LinkedHashMap<>();
+		for (PatientProfile profile : profiles.findByUserIdIn(ids)) {
+			profilesByUserId.put(profile.getUserId(), profile);
+		}
+
+		return ids.stream()
+				.map(userId -> {
+					PatientProfile p = profilesByUserId.get(userId);
+					String fullName = p != null ? p.getFullName() : null;
+					String phone = p != null ? p.getPhone() : null;
+
+					List<MedicalReportResponse> reportRows = reports.findAllByUserIdOrderByUploadedAtDesc(userId).stream()
+							.map(MedicalReportResponse::fromSummary)
+							.sorted(Comparator.comparing(MedicalReportResponse::uploadedAt).reversed())
+							.toList();
+
+					return new InternalPatientWithReportsResponse(userId, fullName, phone, reportRows);
+				})
+				.toList();
 	}
 
 	public MedicalReport getReport(Long userId, Long reportId) {

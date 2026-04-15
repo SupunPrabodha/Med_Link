@@ -84,6 +84,8 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
       test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
       interval: 5s
@@ -186,6 +188,7 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://service-discovery:8761/eureka"
       SPRING_RABBITMQ_HOST: "rabbitmq"
       APP_DOCTOR_BASE_URL: "http://doctor-service:8084"
+      APP_PATIENT_BASE_URL: "http://patient-service:8086"
       SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-appointment:5432/appointmentdb"
       SPRING_DATASOURCE_USERNAME: "appointment"
       SPRING_DATASOURCE_PASSWORD: "appointment"
@@ -291,3 +294,4 @@ volumes:
   pg_doctor_data:
   pg_payment_data:
   pg_patient_data:
+  rabbitmq_data:

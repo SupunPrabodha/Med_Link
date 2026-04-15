@@ -9,7 +9,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -26,7 +25,13 @@ class AppointmentAppServiceTest {
 		when(rest.getForObject(anyString(), eq(AppointmentAppService.DoctorSlotValidationResponse.class)))
 				.thenReturn(new AppointmentAppService.DoctorSlotValidationResponse(true));
 
-		AppointmentAppService svc = new AppointmentAppService(repo, rabbit, builder, "http://doctor-service:8084");
+		AppointmentAppService svc = new AppointmentAppService(
+			repo,
+			rabbit,
+			builder,
+			"http://doctor-service:8084",
+			"http://patient-service:8086"
+		);
 
 		when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
