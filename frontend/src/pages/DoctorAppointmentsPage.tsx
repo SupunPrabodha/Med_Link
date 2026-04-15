@@ -45,7 +45,7 @@ export function DoctorAppointmentsPage() {
 
     const filteredRows = useMemo(() => {
         if (filter === 'APPROVED') {
-            return rows.filter((r) => r.appoinmentApproval === 'APPROVED')
+            return rows.filter((r) => r.appoinmentApproval === 'APPROVED' && r.status !== 'CONFIRMED')
         }
         return rows.filter((r) => r.status === 'CONFIRMED')
     }, [rows, filter])
