@@ -5,6 +5,7 @@ import lk.medilink.telemedicine.domain.ConsultationAuditLog;
 import lk.medilink.telemedicine.domain.ConsultationSession;
 import lk.medilink.telemedicine.domain.ConsultationSessionStatus;
 import lk.medilink.telemedicine.web.dto.ConsultationJoinResponse;
+import lk.medilink.telemedicine.web.dto.ConsultationSessionSummaryResponse;
 import lk.medilink.telemedicine.repo.ConsultationAuditLogRepository;
 import lk.medilink.telemedicine.repo.ConsultationSessionRepository;
 import io.jsonwebtoken.Jwts;
@@ -22,6 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import javax.crypto.SecretKey;
 
@@ -84,6 +87,25 @@ public class ConsultationSessionService {
 			// Unique constraint on appointmentId keeps this idempotent under concurrent deliveries.
 			log.info("Consultation session already exists for appointmentId={}, ignoring duplicate event", appointmentId);
 		}
+	}
+
+	@Transactional(readOnly = true)
+	public List<ConsultationSessionSummaryResponse> listSessionsForUser(Long userId) {
+		if (userId == null || userId <= 0) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid userId");
+		}
+
+		Instant now = Instant.now();
+		Map<Long, ConsultationSessionSummaryResponse> rows = new LinkedHashMap<>();
+
+		sessions.findByDoctorUserIdOrderByScheduledStartTimeDesc(userId)
+				.forEach(session -> rows.put(session.getId(), toSummary(session, userId, now)));
+		sessions.findByPatientUserIdOrderByScheduledStartTimeDesc(userId)
+				.forEach(session -> rows.putIfAbsent(session.getId(), toSummary(session, userId, now)));
+
+		return rows.values().stream()
+				.sorted((a, b) -> b.scheduledStartTime().compareTo(a.scheduledStartTime()))
+				.toList();
 	}
 
 	@Transactional
@@ -153,6 +175,31 @@ public class ConsultationSessionService {
 		Instant opensAt = scheduledStartTime.minus(joinWindowBefore);
 		Instant closesAt = scheduledStartTime.plus(joinWindowAfter);
 		return !now.isBefore(opensAt) && !now.isAfter(closesAt);
+	}
+
+	private ConsultationSessionSummaryResponse toSummary(ConsultationSession session, Long userId, Instant now) {
+		String role = session.getDoctorUserId().equals(userId) ? "DOCTOR" : "PATIENT";
+		Instant opensAt = session.getScheduledStartTime().minus(joinWindowBefore);
+		Instant closesAt = session.getScheduledStartTime().plus(joinWindowAfter);
+		boolean joinable = session.getStatus() != ConsultationSessionStatus.CANCELLED
+				&& session.getStatus() != ConsultationSessionStatus.ENDED
+				&& !now.isBefore(opensAt)
+				&& !now.isAfter(closesAt)
+				&& isParticipant(session, userId);
+
+		return new ConsultationSessionSummaryResponse(
+				session.getId(),
+				session.getAppointmentId(),
+				session.getDoctorUserId(),
+				session.getPatientUserId(),
+				session.getRoomId(),
+				session.getScheduledStartTime(),
+				session.getStatus().name(),
+				role,
+				joinable,
+				opensAt,
+				closesAt
+		);
 	}
 
 	private String buildJoinToken(ConsultationSession session,

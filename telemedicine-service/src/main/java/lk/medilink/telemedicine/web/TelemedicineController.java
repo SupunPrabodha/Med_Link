@@ -2,6 +2,7 @@ package lk.medilink.telemedicine.web;
 
 import lk.medilink.telemedicine.service.ConsultationSessionService;
 import lk.medilink.telemedicine.web.dto.ConsultationJoinResponse;
+import lk.medilink.telemedicine.web.dto.ConsultationSessionSummaryResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +26,11 @@ public class TelemedicineController {
 	public ConsultationJoinResponse join(@RequestHeader("X-User-Id") Long userId,
 	                                    @PathVariable("sessionId") Long sessionId) {
 		return sessions.issueJoinAccess(sessionId, userId);
+	}
+
+	@GetMapping("/me/sessions")
+	public java.util.List<ConsultationSessionSummaryResponse> mySessions(@RequestHeader("X-User-Id") Long userId) {
+		return sessions.listSessionsForUser(userId);
 	}
 
 	@GetMapping("/ping")
