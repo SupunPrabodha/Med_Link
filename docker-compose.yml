@@ -79,6 +79,22 @@ services:
       timeout: 5s
       retries: 20
 
+  postgres-telemedicine:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: telemedicinedb
+      POSTGRES_USER: telemedicine
+      POSTGRES_PASSWORD: telemedicine
+    ports:
+      - "5437:5432"
+    volumes:
+      - pg_telemedicine_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telemedicine -d telemedicinedb"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -246,6 +262,30 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  telemedicine-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: telemedicine-service
+    image: medilink/telemedicine-service:0.1.0
+    ports:
+      - "8087:8087"
+    environment:
+      SERVER_PORT: "8087"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://service-discovery:8761/eureka"
+      SPRING_RABBITMQ_HOST: "rabbitmq"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-telemedicine:5432/telemedicinedb"
+      SPRING_DATASOURCE_USERNAME: "telemedicine"
+      SPRING_DATASOURCE_PASSWORD: "telemedicine"
+    depends_on:
+      service-discovery:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      postgres-telemedicine:
+        condition: service_healthy
+
   api-gateway:
     build:
       context: .
@@ -274,6 +314,8 @@ services:
         condition: service_started
       patient-service:
         condition: service_started
+      telemedicine-service:
+        condition: service_started
 
   frontend:
     build:
@@ -294,4 +336,5 @@ volumes:
   pg_doctor_data:
   pg_payment_data:
   pg_patient_data:
+  pg_telemedicine_data:
   rabbitmq_data:
