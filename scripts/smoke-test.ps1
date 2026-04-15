@@ -99,6 +99,10 @@ Wait-ForHttp -Name "patient-service health" -OkStatuses @(200) -Request {
   Invoke-WebRequest -UseBasicParsing "http://localhost:8086/actuator/health" -TimeoutSec 2
 }
 
+Wait-ForHttp -Name "telemedicine-service health" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "http://localhost:8087/actuator/health" -TimeoutSec 2
+}
+
 # Ensure services are registered in Eureka before attempting gateway load-balancing routes
 Wait-ForHttp -Name "eureka auth-service registered" -OkStatuses @(200) -Request {
   Invoke-WebRequest -UseBasicParsing "http://localhost:8761/eureka/apps/AUTH-SERVICE" -TimeoutSec 2
@@ -115,6 +119,10 @@ Wait-ForHttp -Name "eureka payment-service registered" -OkStatuses @(200) -Reque
 
 Wait-ForHttp -Name "eureka patient-service registered" -OkStatuses @(200) -Request {
   Invoke-WebRequest -UseBasicParsing "http://localhost:8761/eureka/apps/PATIENT-SERVICE" -TimeoutSec 2
+}
+
+Wait-ForHttp -Name "eureka telemedicine-service registered" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "http://localhost:8761/eureka/apps/TELEMEDICINE-SERVICE" -TimeoutSec 2
 }
 
 # Wait for auth route to become routable through gateway.
@@ -140,6 +148,10 @@ Wait-ForHttp -Name "patient route" -OkStatuses @(200, 401, 403, 404) -Request {
   Invoke-WebRequest -UseBasicParsing "$gateway/api/patients/ping" -TimeoutSec 2
 }
 
+Wait-ForHttp -Name "telemedicine route" -OkStatuses @(200, 401, 403, 404) -Request {
+  Invoke-WebRequest -UseBasicParsing "$gateway/api/telemedicine/ping" -TimeoutSec 2
+}
+
 Write-Host "[4/7] Running workflow via gateway (admin+doctor verification -> appointment -> payment -> confirmation)..."
 
 function Register-User($email, $role) {
@@ -159,6 +171,11 @@ $patient = Register-User "patient_$suffix@demo.com" "PATIENT"
 $adminHeaders = @{ Authorization = "Bearer $($admin.accessToken)" }
 $doctorHeaders = @{ Authorization = "Bearer $($doctor.accessToken)" }
 $patientHeaders = @{ Authorization = "Bearer $($patient.accessToken)" }
+
+# Ensure telemedicine route is actually reachable through gateway (auth required)
+Wait-ForHttp -Name "telemedicine ping (auth)" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "$gateway/api/telemedicine/ping" -Headers $patientHeaders -TimeoutSec 2
+}
 
 # RBAC sanity check: patient must NOT access admin-only endpoint
 try {
@@ -295,6 +312,36 @@ if ($latest.status -ne "CONFIRMED") {
   throw "Expected appointment status CONFIRMED after PayHere notify; got '$($latest.status)'."
 }
 
+# Telemedicine session should be created by appointment.confirmed event
+$sessionDeadline = (Get-Date).AddSeconds(90)
+$session = $null
+while ((Get-Date) -lt $sessionDeadline) {
+  try {
+    $session = Invoke-RestMethod -Method Get -Uri "$gateway/api/telemedicine/sessions/appointment/$($appt.id)" -Headers $patientHeaders
+    if ($session -and $session.joinUrl) { break }
+  } catch {
+    # Wait/retry; session creation is async
+  }
+  Start-Sleep -Seconds 2
+}
+
+if (-not $session -or -not $session.joinUrl) {
+  throw "Telemedicine session was not available for appointment id=$($appt.id)"
+}
+
+Write-Host "Telemedicine (patient) joinUrl=$($session.joinUrl) status=$($session.status)"
+if ($session.joinUrl -notlike "*medilink-appt-$($appt.id)*") {
+  throw "Telemedicine joinUrl did not contain expected room name for appointment id=$($appt.id)"
+}
+
+# Doctor should also be able to fetch the session
+$doctorSession = Invoke-RestMethod -Method Get -Uri "$gateway/api/telemedicine/sessions/appointment/$($appt.id)" -Headers $doctorHeaders
+if (-not $doctorSession -or -not $doctorSession.joinUrl) {
+  throw "Doctor could not access telemedicine session for appointment id=$($appt.id)"
+}
+
+Write-Host "Telemedicine (doctor) joinUrl=$($doctorSession.joinUrl) status=$($doctorSession.status)"
+
 Write-Host "[6/7] Verifying admin management endpoints (users + appointments)..."
 
 # Admin: users list/search
@@ -340,5 +387,27 @@ if ($after.status -ne "CANCELLED") {
   throw "Expected patient to see CANCELLED after admin cancel; got '$($after.status)'"
 }
 
-Write-Host "[7/7] Done. (doctor.verified, payment.completed, appointment.confirmed/cancelled, admin.users/appointments verified)."
+# Telemedicine session should be cancelled by appointment.cancelled event
+$cancelDeadline = (Get-Date).AddSeconds(30)
+$cancelSession = $null
+while ((Get-Date) -lt $cancelDeadline) {
+  try {
+    $cancelSession = Invoke-RestMethod -Method Get -Uri "$gateway/api/telemedicine/sessions/appointment/$($appt.id)" -Headers $patientHeaders
+    if ($cancelSession -and $cancelSession.status -eq "CANCELLED") { break }
+  } catch {
+    # ignore and retry
+  }
+  Start-Sleep -Seconds 2
+}
+
+if (-not $cancelSession) {
+  throw "Telemedicine session not found after cancellation (appointment id=$($appt.id))"
+}
+if ($cancelSession.status -ne "CANCELLED") {
+  throw "Expected telemedicine session status CANCELLED after admin cancel; got '$($cancelSession.status)'"
+}
+
+Write-Host "Telemedicine session cancelled status=$($cancelSession.status)"
+
+Write-Host "[7/7] Done. (doctor.verified, payment.completed, appointment.confirmed/cancelled, telemedicine.session, admin.users/appointments verified)."
 

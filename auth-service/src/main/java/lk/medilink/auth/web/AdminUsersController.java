@@ -28,6 +28,19 @@ public class AdminUsersController {
 		return rows.stream().map(u -> new UserSummary(u.getId(), u.getEmail(), u.getRole())).toList();
 	}
 
+	@DeleteMapping("/{id}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void delete(@RequestHeader(value = "X-User-Role", required = false) String roles,
+	                   @PathVariable("id") Long id) {
+		requireAdmin(roles);
+		UserAccount user = users.findById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+		if (user.getRole() == UserRole.ADMIN) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot delete admin users");
+		}
+		users.delete(user);
+	}
+
 	private void requireAdmin(String roles) {
 		if (roles == null || !roles.contains(UserRole.ADMIN.name())) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");

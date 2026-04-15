@@ -20,6 +20,7 @@ export function DoctorAppointmentsPage() {
     const [error, setError] = useState<string | null>(null)
     const [filter, setFilter] = useState<FilterMode>('PENDING_APPROVAL')
     const [updatingId, setUpdatingId] = useState<number | null>(null)
+    const [joiningId, setJoiningId] = useState<number | null>(null)
 
     async function load() {
         setLoading(true)
@@ -69,6 +70,28 @@ export function DoctorAppointmentsPage() {
             setError(formatApiError(err, 'Failed to cancel appointment'))
         } finally {
             setUpdatingId(null)
+        }
+    }
+
+    async function joinVideo(appointmentId: number) {
+        setError(null)
+        setJoiningId(appointmentId)
+        try {
+            const res = await api.get<{ joinUrl: string }>(`/telemedicine/sessions/appointment/${appointmentId}`)
+            const url = res.data?.joinUrl
+            if (!url) {
+                setError('Telemedicine session is not ready yet. Please try again in a moment.')
+                return
+            }
+
+            const opened = window.open(url, '_blank', 'noopener,noreferrer')
+            if (!opened) {
+                window.location.href = url
+            }
+        } catch (err: any) {
+            setError(formatApiError(err, 'Failed to open video session'))
+        } finally {
+            setJoiningId(null)
         }
     }
 
@@ -134,6 +157,8 @@ export function DoctorAppointmentsPage() {
                         <tbody className="divide-y divide-slate-200">
                             {filteredRows.map((a) => {
                                 const busy = updatingId === a.id
+                                const joining = joiningId === a.id
+                                const canJoinVideo = a.status === 'CONFIRMED'
                                 const canApprove = a.status !== 'CANCELLED' && (a.appoinmentApproval == null)
                                 const canCancel = a.status !== 'CANCELLED' && a.appoinmentApproval === 'APPROVED'
 
@@ -150,19 +175,29 @@ export function DoctorAppointmentsPage() {
                                         </td>
                                         <td className="px-3 py-3">
                                             <div className="flex flex-wrap gap-2">
+                                                {canJoinVideo && (
+                                                    <Button
+                                                        variant="secondary"
+                                                        onClick={() => joinVideo(a.id)}
+                                                        disabled={joining || busy || loading || updatingId != null}
+                                                    >
+                                                        {joining ? 'Opening…' : 'Join video'}
+                                                    </Button>
+                                                )}
+
                                                 {canApprove && (
                                                     <>
                                                         <Button
                                                             variant="secondary"
                                                             onClick={() => updateApproval(a.id, 'APPROVED')}
-                                                            disabled={busy || loading || updatingId != null}
+                                                            disabled={joining || busy || loading || updatingId != null}
                                                         >
                                                             {busy ? 'Working…' : 'Accept'}
                                                         </Button>
                                                         <Button
                                                             variant="secondary"
                                                             onClick={() => updateApproval(a.id, 'DECLINED')}
-                                                            disabled={busy || loading || updatingId != null}
+                                                            disabled={joining || busy || loading || updatingId != null}
                                                         >
                                                             {busy ? 'Working…' : 'Reject'}
                                                         </Button>
@@ -173,13 +208,13 @@ export function DoctorAppointmentsPage() {
                                                     <Button
                                                         variant="danger"
                                                         onClick={() => cancelAppointment(a.id)}
-                                                        disabled={busy || loading || updatingId != null}
+                                                        disabled={joining || busy || loading || updatingId != null}
                                                     >
                                                         {busy ? 'Cancelling…' : 'Cancel'}
                                                     </Button>
                                                 )}
 
-                                                {!canApprove && !canCancel && <span className="text-xs text-slate-500">—</span>}
+                                                {!canApprove && !canCancel && !canJoinVideo && <span className="text-xs text-slate-500">—</span>}
                                             </div>
                                         </td>
                                     </tr>

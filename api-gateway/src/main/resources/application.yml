@@ -85,6 +85,14 @@ spring:
             - name: JwtAuthGatewayFilter
               args:
                 requiredRoles: ["ADMIN"]
+        - id: telemedicine-service
+          uri: lb://telemedicine-service
+          predicates:
+            - Path=/api/telemedicine/**
+          filters:
+            - name: JwtAuthGatewayFilter
+              args:
+                requiredRoles: ["PATIENT","DOCTOR","ADMIN"]
         - id: payment-service
           uri: lb://payment-service
           predicates:

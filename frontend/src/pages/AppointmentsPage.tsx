@@ -31,6 +31,7 @@ export function AppointmentsPage() {
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [slotsLoading, setSlotsLoading] = useState(false)
+  const [joiningId, setJoiningId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function refreshSlots(nextDoctorId?: string) {
@@ -111,6 +112,28 @@ export function AppointmentsPage() {
       setError(formatApiError(err, 'Create failed'))
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function joinVideo(appointmentId: number) {
+    setError(null)
+    setJoiningId(appointmentId)
+    try {
+      const res = await api.get<{ joinUrl: string }>(`/telemedicine/sessions/appointment/${appointmentId}`)
+      const url = res.data?.joinUrl
+      if (!url) {
+        setError('Telemedicine session is not ready yet. Please try again in a moment.')
+        return
+      }
+
+      const opened = window.open(url, '_blank', 'noopener,noreferrer')
+      if (!opened) {
+        window.location.href = url
+      }
+    } catch (err: any) {
+      setError(formatApiError(err, 'Failed to open video session'))
+    } finally {
+      setJoiningId(null)
     }
   }
 
@@ -237,15 +260,22 @@ export function AppointmentsPage() {
                   <td className="px-3 py-3 font-mono text-xs text-slate-700">{a.doctorId}</td>
                   <td className="px-3 py-3 font-mono text-xs text-slate-700">{new Date(a.slotTime).toLocaleString()}</td>
                   <td className="px-3 py-3">
-                    {a.appoinmentApproval ? <Badge>{a.appoinmentApproval}</Badge> : <span className="text-xs text-slate-500">Pending</span>}
+                    {a.appoinmentApproval ? <Badge>{a.appoinmentApproval}</Badge> : <span className="text-xs text-slate-500">Awaiting approval</span>}
                   </td>
                   <td className="px-3 py-3">
                     <Badge>{a.status}</Badge>
                   </td>
                   <td className="px-3 py-3">
-                    <Button variant="danger" onClick={() => cancel(a.id)} disabled={a.status === 'CANCELLED'}>
-                      Cancel
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      {!isAdmin && a.status === 'CONFIRMED' && (
+                        <Button variant="secondary" onClick={() => joinVideo(a.id)} disabled={joiningId === a.id}>
+                          {joiningId === a.id ? 'Opening…' : 'Join video'}
+                        </Button>
+                      )}
+                      <Button variant="danger" onClick={() => cancel(a.id)} disabled={a.status === 'CANCELLED' || joiningId === a.id}>
+                        Cancel
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -269,7 +299,7 @@ export function AppointmentsPage() {
             </span>
           ) : (
             <span>
-              Note: payments are based on <span className="font-mono">appointmentId</span>. Create an appointment first.
+              Note: wait for doctor approval before paying (payments use <span className="font-mono">appointmentId</span>).
             </span>
           )}
         </div>

@@ -47,6 +47,10 @@ public class JwtAuthGatewayFilter extends AbstractGatewayFilterFactory<JwtAuthGa
 					.request(r -> r.headers(h -> {
 						h.add("X-User-Id", String.valueOf(claims.get("uid")));
 						h.add("X-User-Role", String.join(",", roles));
+						Object email = claims.get("email");
+						if (email != null) {
+							h.add("X-User-Email", String.valueOf(email));
+						}
 					}))
 					.build();
 

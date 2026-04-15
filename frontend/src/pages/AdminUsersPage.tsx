@@ -15,6 +15,7 @@ export function AdminUsersPage() {
   const [q, setQ] = useState('')
   const [rows, setRows] = useState<UserRow[]>([])
   const [loading, setLoading] = useState(false)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function load() {
@@ -30,6 +31,24 @@ export function AdminUsersPage() {
       setError(formatApiError(err, 'Failed to load users'))
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function removeUser(u: UserRow) {
+    if (u.role === 'ADMIN') return
+
+    const ok = window.confirm(`Remove user ${u.email} (ID ${u.id})?`)
+    if (!ok) return
+
+    setDeletingId(u.id)
+    setError(null)
+    try {
+      await api.delete(`/admin/users/${u.id}`)
+      await load()
+    } catch (err: any) {
+      setError(formatApiError(err, 'Remove failed'))
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -75,6 +94,7 @@ export function AdminUsersPage() {
                 <th className="px-3 py-2 font-semibold">User ID</th>
                 <th className="px-3 py-2 font-semibold">Email</th>
                 <th className="px-3 py-2 font-semibold">Role</th>
+                <th className="px-3 py-2 font-semibold">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -85,12 +105,21 @@ export function AdminUsersPage() {
                   <td className="px-3 py-3">
                     <Badge>{u.role}</Badge>
                   </td>
+                  <td className="px-3 py-3">
+                    <Button
+                      variant="danger"
+                      onClick={() => removeUser(u)}
+                      disabled={loading || deletingId === u.id || u.role === 'ADMIN'}
+                    >
+                      {deletingId === u.id ? 'Removing…' : 'Remove'}
+                    </Button>
+                  </td>
                 </tr>
               ))}
 
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-3 py-8 text-center text-slate-500">
+                  <td colSpan={4} className="px-3 py-8 text-center text-slate-500">
                     No users found.
                   </td>
                 </tr>
@@ -98,7 +127,7 @@ export function AdminUsersPage() {
 
               {loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-3 py-8 text-center text-slate-500">
+                  <td colSpan={4} className="px-3 py-8 text-center text-slate-500">
                     Loading…
                   </td>
                 </tr>

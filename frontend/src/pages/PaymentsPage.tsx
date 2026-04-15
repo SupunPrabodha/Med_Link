@@ -138,7 +138,7 @@ export function PaymentsPage() {
                       <td className="px-3 py-3 font-mono text-xs text-slate-700">{a.doctorId}</td>
                       <td className="px-3 py-3 font-mono text-xs text-slate-700">{new Date(a.slotTime).toLocaleString()}</td>
                       <td className="px-3 py-3">
-                        {a.appoinmentApproval ? <Badge>{a.appoinmentApproval}</Badge> : <span className="text-xs text-slate-500">Pending</span>}
+                        {a.appoinmentApproval ? <Badge>{a.appoinmentApproval}</Badge> : <span className="text-xs text-slate-500">Awaiting approval</span>}
                       </td>
                       <td className="px-3 py-3">
                         <Badge>{a.status}</Badge>
@@ -210,7 +210,7 @@ export function PaymentsPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="text-sm font-semibold text-slate-900">PayHere checkout</div>
-              <div className="mt-1 text-xs text-slate-500">A new tab will open to complete your payment.</div>
+              <div className="mt-1 text-xs text-slate-500">You will be redirected to PayHere to complete your payment.</div>
             </div>
             {appointmentId.trim() && <Badge className="font-mono">Appointment #{appointmentId}</Badge>}
           </div>
@@ -226,7 +226,7 @@ export function PaymentsPage() {
             </div>
           </div>
 
-          <form className="mt-4 flex flex-wrap items-center gap-2" method="POST" action={intent.checkoutUrl} target="_blank">
+          <form className="mt-4 flex flex-wrap items-center gap-2" method="POST" action={intent.checkoutUrl}>
             {Object.entries(intent.formFields).map(([k, v]) => (
               <input key={k} type="hidden" name={k} value={v} />
             ))}

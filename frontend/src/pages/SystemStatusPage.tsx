@@ -12,6 +12,7 @@ const pings: PingRow[] = [
   { name: 'Doctor', url: '/doctors/ping', requiresAuth: true },
   { name: 'Payment', url: '/payments/ping', requiresAuth: true },
   { name: 'Patient', url: '/patients/ping', requiresAuth: true },
+  { name: 'Telemedicine', url: '/telemedicine/ping', requiresAuth: true },
 ]
 
 export function SystemStatusPage() {

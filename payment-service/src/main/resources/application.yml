@@ -23,6 +23,8 @@ eureka:
       defaultZone: http://localhost:8761/eureka
 
 app:
+  appointment-base-url: http://localhost:8082
+  patient-base-url: http://localhost:8086
   gateway-base-url: http://localhost:8090
 
 payhere:

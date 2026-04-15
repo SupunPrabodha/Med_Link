@@ -21,8 +21,9 @@ public class PaymentController {
 	@PostMapping("/intents/payhere")
 	@ResponseStatus(HttpStatus.CREATED)
 	public PaymentIntentResponse createPayHereIntent(@RequestHeader("X-User-Id") Long patientId,
+	                                                @RequestHeader(value = "X-User-Email", required = false) String patientEmail,
 	                                                @Valid @RequestBody CreateIntentRequest req) {
-		return service.createPayHereIntent(patientId, req.appointmentId(), req.amount(), req.resolvedCurrency());
+		return service.createPayHereIntent(patientId, patientEmail, req.appointmentId(), req.amount(), req.resolvedCurrency());
 	}
 
 	@GetMapping("/ping")
