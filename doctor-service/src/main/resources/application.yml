@@ -8,6 +8,10 @@ spring:
     url: jdbc:postgresql://localhost:5434/doctordb
     username: doctor
     password: doctor
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
   jpa:
     hibernate:
       ddl-auto: update

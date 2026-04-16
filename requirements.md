@@ -4,33 +4,34 @@
 
 ## ✅ Current Implementation Scope (this repository)
 
-This repository is a **runnable microservices skeleton** aligned to the core distributed-systems requirements (Gateway + Discovery + Auth + RBAC + async events + per-service databases + Docker/K8s manifests).
+This repository contains a **runnable microservices-based MediLink LK platform** aligned to the distributed-systems requirements (Gateway + Discovery + Auth + RBAC + async events + per-service PostgreSQL + Docker/K8s).
 
-Implemented as runnable services (see `Readme.md` for ports and workflow):
+Implemented services (see `Readme.md` for ports and workflow):
 - Service Discovery (Eureka)
-- API Gateway (routing + JWT validation + basic RBAC)
+- API Gateway (routing + JWT validation + RBAC)
 - Auth Service (register/login, issues JWT)
-- Patient Service (profile + medical reports upload/list/download/delete)
-- Doctor Service (onboarding + admin verification)
-- Appointment Service (CRUD + appointment lifecycle events)
-- Payment Service (PayHere-style intent + notify callback signature validation)
-- Notification Service (consumes events, logs notifications)
+- Patient Service (profile + profile photo upload (Cloudinary) + medical reports upload/list/download/delete)
+- Doctor Service (onboarding + availability + profile photo upload (Cloudinary) + admin verification)
+- Appointment Service (booking + lifecycle events)
+- Telemedicine Service (Jitsi-based sessions)
+- Payment Service (Stripe Checkout + webhook; PayHere flow kept for compatibility)
+- Notification Service (consumes events + in-app notifications; optional real Email/SMS delivery when configured)
 
-Implemented UI (minimal, marker-friendly):
-- Frontend (React + Vite + Tailwind) under `frontend/`
-    - Auth (register/login)
-    - Doctor onboarding (submit profile)
-    - Admin doctor verification
-    - Admin user management (list/search accounts)
-    - Admin appointment management (list/cancel platform appointments)
-    - Appointment create/list/cancel
-    - Payment intent creation
-    - System status page (health checks)
+Implemented UI (React + Vite + Tailwind) under `frontend/`:
+- Auth (register/login)
+- Patient profile (profile + profile photo + medical reports)
+- Doctor profile (profile + phone + availability + profile photo)
+- Doctor browsing (shows avatar)
+- Appointments (patient + doctor + admin flows)
+- Payments (checkout initiation + return)
+- Notifications page (in-app)
+- Admin pages (users, doctors, patients, payments, appointments)
+- System status page (health checks)
 
-Not implemented in this skeleton (kept as **target scope / future extensions** in this document):
-- Telemedicine (Jitsi)
-- Prescriptions
+Still not implemented (planned / optional):
+- Digital prescriptions
 - AI symptom checker
+- Persistent notification storage (current notifications are in-memory)
 
 MediLink LK is a cloud-native, microservices-based healthcare platform designed to facilitate digital medical services including:
 
@@ -107,10 +108,11 @@ This system is designed to follow **distributed systems principles**, using **in
 
 ### External Integrations
 - Video: Jitsi Meet
-- Payments: PayHere (Sandbox)
-- Email: Brevo / Nodemailer
-- SMS: Mock or Twilio
-- AI: OpenAI API (Symptom Checker)
+- Payments: Stripe (Checkout + webhook) / PayHere (compatibility)
+- Image storage: Cloudinary (profile photos)
+- Email: Brevo (optional; when configured)
+- SMS: Twilio (optional; when configured)
+- AI: OpenAI API (Symptom Checker) (not implemented)
 
 ### DevOps
 - Docker
@@ -234,9 +236,9 @@ Consumers:
 
 ## 📁 File Storage
 
-- Medical reports stored in Cloudinary / S3
-- Only metadata stored in DB
-- Secure access via URLs
+- Profile photos stored in Cloudinary (when `APP_CLOUDINARY_URL` is configured)
+- Medical reports are currently stored in PostgreSQL (bytea) and served via download endpoints
+- (Optional future improvement) Move medical reports to object storage (Cloudinary/S3) and store only metadata + secure URLs
 
 ---
 
@@ -263,10 +265,12 @@ Consumers:
 ## 📩 Notification System
 
 - Triggered via RabbitMQ events
-- Email confirmations
-- Appointment reminders
-- Payment notifications
-- Doctor approval alerts
+- In-app notifications (notification-service stores and exposes REST endpoints; frontend has a Notifications page)
+- Optional real delivery when configured:
+  - Email via Brevo
+  - SMS via Twilio
+- Payment notifications and doctor approval alerts are supported via events
+- (Optional future improvement) Scheduled appointment reminders
 
 ---
 

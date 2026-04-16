@@ -27,6 +27,9 @@ public class PatientProfile {
 	@Column(nullable = true)
 	private String address;
 
+	@Column(nullable = true)
+	private String profilePhotoUrl;
+
 	@Column(nullable = false)
 	private Instant updatedAt;
 
@@ -83,6 +86,15 @@ public class PatientProfile {
 
 	public void setAddress(String address) {
 		this.address = address;
+		this.updatedAt = Instant.now();
+	}
+
+	public String getProfilePhotoUrl() {
+		return profilePhotoUrl;
+	}
+
+	public void setProfilePhotoUrl(String profilePhotoUrl) {
+		this.profilePhotoUrl = profilePhotoUrl;
 		this.updatedAt = Instant.now();
 	}
 

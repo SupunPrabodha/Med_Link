@@ -136,6 +136,7 @@ services:
       SERVER_PORT: "8081"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://service-discovery:8761/eureka"
       SECURITY_JWT_SECRET: "change-me-to-a-long-32bytes-min-secret-change-me"
+      APP_INTERNAL_TOKEN: "${INTERNAL_API_TOKEN:-change-me-internal-token}"
       SPRING_DATASOURCE_URL: "${AUTH_DB_URL:-jdbc:postgresql://postgres-auth:5432/authdb}"
       SPRING_DATASOURCE_USERNAME: "${AUTH_DB_USER:-auth}"
       SPRING_DATASOURCE_PASSWORD: "${AUTH_DB_PASS:-auth}"
@@ -157,6 +158,8 @@ services:
     environment:
       SERVER_PORT: "8086"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://service-discovery:8761/eureka"
+      APP_CLOUDINARY_URL: "${APP_CLOUDINARY_URL:-}"
+      APP_INTERNAL_TOKEN: "${INTERNAL_API_TOKEN:-change-me-internal-token}"
       SPRING_DATASOURCE_URL: "${PATIENT_DB_URL:-jdbc:postgresql://postgres-patient:5432/patientdb}"
       SPRING_DATASOURCE_USERNAME: "${PATIENT_DB_USER:-patient}"
       SPRING_DATASOURCE_PASSWORD: "${PATIENT_DB_PASS:-patient}"
@@ -179,6 +182,8 @@ services:
       SERVER_PORT: "8084"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://service-discovery:8761/eureka"
       SPRING_RABBITMQ_HOST: "rabbitmq"
+      APP_CLOUDINARY_URL: "${APP_CLOUDINARY_URL:-}"
+      APP_INTERNAL_TOKEN: "${INTERNAL_API_TOKEN:-change-me-internal-token}"
       SPRING_DATASOURCE_URL: "${DOCTOR_DB_URL:-jdbc:postgresql://postgres-doctor:5432/doctordb}"
       SPRING_DATASOURCE_USERNAME: "${DOCTOR_DB_USER:-doctor}"
       SPRING_DATASOURCE_PASSWORD: "${DOCTOR_DB_PASS:-doctor}"
@@ -261,6 +266,16 @@ services:
       SERVER_PORT: "8083"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://service-discovery:8761/eureka"
       SPRING_RABBITMQ_HOST: "rabbitmq"
+      APP_INTERNAL_TOKEN: "${INTERNAL_API_TOKEN:-change-me-internal-token}"
+      APP_AUTH_BASE_URL: "http://auth-service:8081"
+      APP_PATIENT_BASE_URL: "http://patient-service:8086"
+      APP_DOCTOR_BASE_URL: "http://doctor-service:8084"
+      APP_BREVO_API_KEY: "${BREVO_API_KEY:-}"
+      APP_BREVO_FROM_EMAIL: "${BREVO_FROM_EMAIL:-}"
+      APP_BREVO_FROM_NAME: "${BREVO_FROM_NAME:-MediLink LK}"
+      APP_TWILIO_ACCOUNT_SID: "${TWILIO_ACCOUNT_SID:-}"
+      APP_TWILIO_AUTH_TOKEN: "${TWILIO_AUTH_TOKEN:-}"
+      APP_TWILIO_FROM_NUMBER: "${TWILIO_FROM_NUMBER:-}"
     depends_on:
       service-discovery:
         condition: service_started

@@ -1,5 +1,7 @@
 package lk.medilink.patient.service;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import lk.medilink.patient.domain.MedicalReport;
 import lk.medilink.patient.domain.PatientProfile;
 import lk.medilink.patient.repo.MedicalReportRepository;
@@ -7,6 +9,7 @@ import lk.medilink.patient.repo.MedicalReportSummary;
 import lk.medilink.patient.repo.PatientProfileRepository;
 import lk.medilink.patient.web.dto.InternalPatientWithReportsResponse;
 import lk.medilink.patient.web.dto.MedicalReportResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,23 +17,32 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import javax.imageio.ImageIO;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class PatientAppService {
 	private static final long MAX_REPORT_BYTES = 5L * 1024 * 1024;
+	private static final long MAX_PHOTO_BYTES = 2L * 1024 * 1024;
+	private static final Set<String> ALLOWED_PHOTO_CONTENT_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
 
 	private final PatientProfileRepository profiles;
 	private final MedicalReportRepository reports;
+	private final Cloudinary cloudinary;
 
-	public PatientAppService(PatientProfileRepository profiles, MedicalReportRepository reports) {
+	public PatientAppService(PatientProfileRepository profiles,
+	                         MedicalReportRepository reports,
+	                         @Value("${app.cloudinary-url:}") String cloudinaryUrl) {
 		this.profiles = profiles;
 		this.reports = reports;
+		this.cloudinary = cloudinaryUrl == null || cloudinaryUrl.isBlank() ? null : new Cloudinary(cloudinaryUrl.trim());
 	}
 
 	@Transactional
@@ -56,6 +68,62 @@ public class PatientAppService {
 	public PatientProfile getProfile(Long userId) {
 		return profiles.findByUserId(userId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
+	}
+
+	@Transactional
+	public PatientProfile uploadProfilePhoto(Long userId, MultipartFile file) {
+		if (cloudinary == null) {
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Image storage is not configured");
+		}
+		if (file == null || file.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Photo file is required");
+		}
+		if (file.getSize() > MAX_PHOTO_BYTES) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Photo must be 2MB or less");
+		}
+
+		String contentType = file.getContentType();
+		if (contentType == null || contentType.isBlank() || !ALLOWED_PHOTO_CONTENT_TYPES.contains(contentType)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only JPEG, PNG or WebP images are allowed");
+		}
+
+		byte[] bytes;
+		try {
+			bytes = file.getBytes();
+		} catch (IOException e) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unable to read uploaded file");
+		}
+
+		try {
+			if (ImageIO.read(new ByteArrayInputStream(bytes)) == null) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid image file");
+			}
+		} catch (IOException e) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid image file");
+		}
+
+		Map<?, ?> res;
+		try {
+			res = cloudinary.uploader().upload(bytes, ObjectUtils.asMap(
+					"folder", "medilink/patient/profile-photos",
+					"public_id", "user-" + userId,
+					"overwrite", true,
+					"resource_type", "image",
+					"transformation", "c_fill,w_256,h_256"
+			));
+		} catch (Exception e) {
+			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Failed to upload image");
+		}
+
+		String url = res == null ? null : (String) res.get("secure_url");
+		if (url == null || url.isBlank()) {
+			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Image upload did not return a URL");
+		}
+
+		PatientProfile p = profiles.findByUserId(userId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
+		p.setProfilePhotoUrl(url);
+		return profiles.save(p);
 	}
 
 	@Transactional

@@ -7,9 +7,11 @@ type DoctorProfile = {
   id: number
   userId: number
   fullName: string
+  phone?: string | null
   registrationNo: string
   specialization: string
   documentsUrl?: string | null
+  profilePhotoUrl?: string | null
   status: 'PENDING' | 'VERIFIED' | 'REJECTED'
   updatedAt: string
   rejectionReason?: string | null
@@ -50,9 +52,14 @@ function minutesOf(t: string) {
 export function DoctorProfilePage() {
   const [profile, setProfile] = useState<DoctorProfile | null>(null)
   const [fullName, setFullName] = useState('')
+  const [phone, setPhone] = useState('')
   const [registrationNo, setRegistrationNo] = useState('')
   const [specialization, setSpecialization] = useState('')
   const [documentsUrl, setDocumentsUrl] = useState('')
+
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoUploading, setPhotoUploading] = useState(false)
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -72,6 +79,7 @@ export function DoctorProfilePage() {
       const res = await api.get<DoctorProfile>('/doctors/me/profile')
       setProfile(res.data)
       setFullName(res.data.fullName)
+      setPhone(res.data.phone ?? '')
       setRegistrationNo(res.data.registrationNo)
       setSpecialization(res.data.specialization)
       setDocumentsUrl(res.data.documentsUrl ?? '')
@@ -173,6 +181,38 @@ export function DoctorProfilePage() {
     }
   }
 
+  async function uploadPhoto() {
+    setError(null)
+    setSuccess(null)
+
+    if (!profile) {
+      setError('Create your profile first')
+      return
+    }
+    if (!photoFile) {
+      setError('Please choose an image')
+      return
+    }
+    if (photoFile.size > 2 * 1024 * 1024) {
+      setError('Photo must be 2MB or less')
+      return
+    }
+
+    setPhotoUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', photoFile)
+      const res = await api.post<DoctorProfile>('/doctors/me/profile-photo', fd)
+      setProfile(res.data)
+      setPhotoFile(null)
+      setSuccess('Profile photo updated')
+    } catch (err: any) {
+      setError(formatApiError(err, 'Failed to upload photo'))
+    } finally {
+      setPhotoUploading(false)
+    }
+  }
+
   async function save() {
     setLoading(true)
     setError(null)
@@ -180,6 +220,7 @@ export function DoctorProfilePage() {
     try {
       const res = await api.post<DoctorProfile>('/doctors/me/profile', {
         fullName: fullName.trim(),
+        phone: phone.trim() ? phone.trim() : null,
         registrationNo: registrationNo.trim(),
         specialization: specialization.trim(),
         documentsUrl: documentsUrl.trim() ? documentsUrl.trim() : null,
@@ -223,11 +264,43 @@ export function DoctorProfilePage() {
           </div>
         )}
 
+        <div className="mt-4 flex flex-wrap items-center gap-4">
+          <div className="h-16 w-16 overflow-hidden rounded-full border border-slate-200 bg-slate-50">
+            {profile?.profilePhotoUrl ? (
+              <img src={profile.profilePhotoUrl} alt="Profile" className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-[10px] text-slate-400">No photo</div>
+            )}
+          </div>
+          <div className="min-w-[240px] flex-1">
+            <Label>Profile photo</Label>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <Input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
+                disabled={loading || photoUploading || !profile}
+              />
+              <Button variant="secondary" onClick={uploadPhoto} disabled={loading || photoUploading || !profile || !photoFile}>
+                {photoUploading ? 'Uploading…' : 'Upload'}
+              </Button>
+              <Badge>Max 2MB</Badge>
+            </div>
+            {!profile && <div className="mt-1 text-xs text-slate-500">Save your profile first to enable photo upload.</div>}
+          </div>
+        </div>
+
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <div>
             <Label>Full name</Label>
             <div className="mt-1">
               <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <Label>Phone (optional)</Label>
+            <div className="mt-1">
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+94..." />
             </div>
           </div>
           <div>

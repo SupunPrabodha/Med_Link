@@ -8,7 +8,9 @@ import lk.medilink.doctor.web.dto.AvailabilityValidationResponse;
 import lk.medilink.doctor.web.dto.UpsertDoctorAvailabilityRequest;
 import lk.medilink.doctor.web.dto.UpsertDoctorProfileRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 import java.util.List;
@@ -26,7 +28,14 @@ public class DoctorController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public DoctorProfile upsertProfile(@RequestHeader("X-User-Id") Long userId,
 	                                 @Valid @RequestBody UpsertDoctorProfileRequest req) {
-		return service.upsertProfile(userId, req.fullName(), req.registrationNo(), req.specialization(), req.documentsUrl());
+		return service.upsertProfile(userId, req.fullName(), req.phone(), req.registrationNo(), req.specialization(), req.documentsUrl());
+	}
+
+	@PostMapping(value = "/me/profile-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@ResponseStatus(HttpStatus.CREATED)
+	public DoctorProfile uploadProfilePhoto(@RequestHeader("X-User-Id") Long userId,
+	                                        @RequestPart("file") MultipartFile file) {
+		return service.uploadProfilePhoto(userId, file);
 	}
 
 	@GetMapping("/me/profile")

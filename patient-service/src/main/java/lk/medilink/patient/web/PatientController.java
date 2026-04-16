@@ -43,6 +43,13 @@ public class PatientController {
 		return service.upsertProfile(userId, req.fullName().trim(), req.phone().trim(), req.dateOfBirth(), trimToNull(req.address()));
 	}
 
+	@PostMapping(value = "/me/profile-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@ResponseStatus(HttpStatus.CREATED)
+	public PatientProfile uploadProfilePhoto(@RequestHeader("X-User-Id") Long userId,
+	                                         @RequestPart("file") MultipartFile file) {
+		return service.uploadProfilePhoto(userId, file);
+	}
+
 	@PostMapping(value = "/me/reports", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@ResponseStatus(HttpStatus.CREATED)
 	public MedicalReportResponse uploadReport(@RequestHeader("X-User-Id") Long userId,

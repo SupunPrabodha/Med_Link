@@ -1,5 +1,7 @@
 package lk.medilink.doctor.service;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import lk.medilink.doctor.domain.DoctorAvailabilityBlock;
 import lk.medilink.doctor.domain.DoctorProfile;
 import lk.medilink.doctor.domain.VerificationStatus;
@@ -9,11 +11,16 @@ import lk.medilink.doctor.repo.DoctorAvailabilityBlockRepository;
 import lk.medilink.doctor.repo.DoctorProfileRepository;
 import lk.medilink.doctor.web.dto.UpsertDoctorAvailabilityRequest;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import javax.imageio.ImageIO;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.time.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -21,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,25 +37,31 @@ public class DoctorAppService {
 	private static final ZoneId AVAILABILITY_ZONE = ZoneId.of("Asia/Colombo");
 	private static final int MAX_AVAILABILITY_BLOCKS = 50;
 	private static final int MAX_SLOTS_RESPONSE = 1000;
+	private static final long MAX_PHOTO_BYTES = 2L * 1024 * 1024;
+	private static final Set<String> ALLOWED_PHOTO_CONTENT_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
 
 	private final DoctorProfileRepository repo;
 	private final DoctorAvailabilityBlockRepository availabilityRepo;
 	private final RabbitTemplate rabbit;
+	private final Cloudinary cloudinary;
 
 	public DoctorAppService(DoctorProfileRepository repo,
 	                        DoctorAvailabilityBlockRepository availabilityRepo,
-	                        RabbitTemplate rabbit) {
+	                        RabbitTemplate rabbit,
+	                        @Value("${app.cloudinary-url:}") String cloudinaryUrl) {
 		this.repo = repo;
 		this.availabilityRepo = availabilityRepo;
 		this.rabbit = rabbit;
+		this.cloudinary = cloudinaryUrl == null || cloudinaryUrl.isBlank() ? null : new Cloudinary(cloudinaryUrl.trim());
 	}
 
 	@Transactional
-	public DoctorProfile upsertProfile(Long userId, String fullName, String registrationNo, String specialization, String documentsUrl) {
+	public DoctorProfile upsertProfile(Long userId, String fullName, String phone, String registrationNo, String specialization, String documentsUrl) {
 		DoctorProfile profile = repo.findByUserId(userId)
 				.orElseGet(() -> new DoctorProfile(userId, fullName, registrationNo, specialization, documentsUrl));
 
 		profile.setFullName(fullName);
+		profile.setPhone(blankToNull(phone));
 		profile.setRegistrationNo(registrationNo);
 		profile.setSpecialization(specialization);
 		profile.setDocumentsUrl(documentsUrl);
@@ -61,6 +75,62 @@ public class DoctorAppService {
 	public DoctorProfile getOwn(Long userId) {
 		return repo.findByUserId(userId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No profile"));
+	}
+
+	@Transactional
+	public DoctorProfile uploadProfilePhoto(Long userId, MultipartFile file) {
+		if (cloudinary == null) {
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Image storage is not configured");
+		}
+		if (file == null || file.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Photo file is required");
+		}
+		if (file.getSize() > MAX_PHOTO_BYTES) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Photo must be 2MB or less");
+		}
+
+		String contentType = file.getContentType();
+		if (contentType == null || contentType.isBlank() || !ALLOWED_PHOTO_CONTENT_TYPES.contains(contentType)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only JPEG, PNG or WebP images are allowed");
+		}
+
+		byte[] bytes;
+		try {
+			bytes = file.getBytes();
+		} catch (IOException e) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unable to read uploaded file");
+		}
+
+		try {
+			if (ImageIO.read(new ByteArrayInputStream(bytes)) == null) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid image file");
+			}
+		} catch (IOException e) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid image file");
+		}
+
+		Map<?, ?> res;
+		try {
+			res = cloudinary.uploader().upload(bytes, ObjectUtils.asMap(
+					"folder", "medilink/doctor/profile-photos",
+					"public_id", "user-" + userId,
+					"overwrite", true,
+					"resource_type", "image",
+					"transformation", "c_fill,w_256,h_256"
+			));
+		} catch (Exception e) {
+			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Failed to upload image");
+		}
+
+		String url = res == null ? null : (String) res.get("secure_url");
+		if (url == null || url.isBlank()) {
+			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Image upload did not return a URL");
+		}
+
+		DoctorProfile p = repo.findByUserId(userId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No profile"));
+		p.setProfilePhotoUrl(url);
+		return repo.save(p);
 	}
 
 	public List<DoctorProfile> searchVerified(String specialization) {
@@ -261,6 +331,12 @@ public class DoctorAppService {
 				new DoctorEvents.DoctorRejected(saved.getId(), saved.getUserId(), reason, Instant.now()));
 
 		return saved;
+	}
+
+	private static String blankToNull(String s) {
+		if (s == null) return null;
+		String t = s.trim();
+		return t.isEmpty() ? null : t;
 	}
 }
 

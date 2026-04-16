@@ -10,6 +10,7 @@ type DoctorProfile = {
   registrationNo: string
   specialization: string
   documentsUrl?: string | null
+  profilePhotoUrl?: string | null
   status: 'PENDING' | 'VERIFIED' | 'REJECTED'
   updatedAt: string
   rejectionReason?: string | null
@@ -122,7 +123,18 @@ export function DoctorsPage() {
             <tbody className="divide-y divide-slate-200">
               {rows.map((d) => (
                 <tr key={d.id} className="hover:bg-slate-50">
-                  <td className="px-3 py-3 font-medium text-slate-900">{d.fullName}</td>
+                  <td className="px-3 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 overflow-hidden rounded-full border border-slate-200 bg-slate-50">
+                        {d.profilePhotoUrl ? (
+                          <img src={d.profilePhotoUrl} alt={d.fullName} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-[9px] text-slate-400">—</div>
+                        )}
+                      </div>
+                      <div className="font-medium text-slate-900">{d.fullName}</div>
+                    </div>
+                  </td>
                   <td className="px-3 py-3 text-slate-700">{d.specialization}</td>
                   <td className="px-3 py-3 font-mono text-xs text-slate-700">{d.registrationNo}</td>
                   <td className="px-3 py-3 font-mono text-xs text-slate-700">

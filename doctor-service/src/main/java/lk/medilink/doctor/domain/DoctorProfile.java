@@ -17,6 +17,9 @@ public class DoctorProfile {
 	@Column(nullable = false)
 	private String fullName;
 
+	@Column(nullable = true)
+	private String phone;
+
 	@Column(nullable = false)
 	private String registrationNo;
 
@@ -25,6 +28,9 @@ public class DoctorProfile {
 
 	@Column(nullable = true)
 	private String documentsUrl;
+
+	@Column(nullable = true)
+	private String profilePhotoUrl;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
@@ -66,6 +72,15 @@ public class DoctorProfile {
 		this.updatedAt = Instant.now();
 	}
 
+	public String getPhone() {
+		return phone;
+	}
+
+	public void setPhone(String phone) {
+		this.phone = phone;
+		this.updatedAt = Instant.now();
+	}
+
 	public String getRegistrationNo() {
 		return registrationNo;
 	}
@@ -90,6 +105,15 @@ public class DoctorProfile {
 
 	public void setDocumentsUrl(String documentsUrl) {
 		this.documentsUrl = documentsUrl;
+		this.updatedAt = Instant.now();
+	}
+
+	public String getProfilePhotoUrl() {
+		return profilePhotoUrl;
+	}
+
+	public void setProfilePhotoUrl(String profilePhotoUrl) {
+		this.profilePhotoUrl = profilePhotoUrl;
 		this.updatedAt = Instant.now();
 	}
 

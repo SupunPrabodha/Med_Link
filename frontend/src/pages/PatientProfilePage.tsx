@@ -10,6 +10,7 @@ type PatientProfile = {
   phone: string
   dateOfBirth: string | null
   address: string | null
+  profilePhotoUrl?: string | null
   updatedAt: string
 }
 
@@ -48,6 +49,9 @@ export function PatientProfilePage() {
   const [phone, setPhone] = useState('')
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [address, setAddress] = useState('')
+
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoUploading, setPhotoUploading] = useState(false)
 
   const [reports, setReports] = useState<MedicalReport[]>([])
   const [reportFile, setReportFile] = useState<File | null>(null)
@@ -124,6 +128,38 @@ export function PatientProfilePage() {
     }
   }
 
+  async function uploadPhoto() {
+    setError(null)
+    setSuccess(null)
+
+    if (!profile) {
+      setError('Create your profile first')
+      return
+    }
+    if (!photoFile) {
+      setError('Please choose an image')
+      return
+    }
+    if (photoFile.size > 2 * 1024 * 1024) {
+      setError('Photo must be 2MB or less')
+      return
+    }
+
+    setPhotoUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', photoFile)
+      const res = await api.post<PatientProfile>('/patients/me/profile-photo', fd)
+      setProfile(res.data)
+      setPhotoFile(null)
+      setSuccess('Profile photo updated')
+    } catch (err: any) {
+      setError(formatApiError(err, 'Failed to upload photo'))
+    } finally {
+      setPhotoUploading(false)
+    }
+  }
+
   async function uploadReport() {
     setError(null)
     setSuccess(null)
@@ -194,6 +230,32 @@ export function PatientProfilePage() {
             <Button variant="secondary" onClick={loadAll} disabled={loading}>
               {loading ? 'Loading…' : 'Refresh'}
             </Button>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-4">
+          <div className="h-16 w-16 overflow-hidden rounded-full border border-slate-200 bg-slate-50">
+            {profile?.profilePhotoUrl ? (
+              <img src={profile.profilePhotoUrl} alt="Profile" className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-[10px] text-slate-400">No photo</div>
+            )}
+          </div>
+          <div className="min-w-[240px] flex-1">
+            <Label>Profile photo</Label>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <Input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
+                disabled={loading || photoUploading || !profile}
+              />
+              <Button variant="secondary" onClick={uploadPhoto} disabled={loading || photoUploading || !profile || !photoFile}>
+                {photoUploading ? 'Uploading…' : 'Upload'}
+              </Button>
+              <Badge>Max 2MB</Badge>
+            </div>
+            {!profile && <div className="mt-1 text-xs text-slate-500">Save your profile first to enable photo upload.</div>}
           </div>
         </div>
 
