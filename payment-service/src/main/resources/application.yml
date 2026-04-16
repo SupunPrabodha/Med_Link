@@ -26,6 +26,7 @@ app:
   appointment-base-url: http://localhost:8082
   patient-base-url: http://localhost:8086
   gateway-base-url: http://localhost:8090
+  frontend-base-url: http://localhost:5173
 
 payhere:
   sandbox: true
@@ -33,6 +34,10 @@ payhere:
   merchant-secret: "change-me"
   sandbox-checkout-url: https://sandbox.payhere.lk/pay/checkout
   live-checkout-url: https://www.payhere.lk/pay/checkout
+
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY:}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
 
 management:
   endpoints:

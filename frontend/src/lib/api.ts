@@ -15,3 +15,13 @@ export function setAuthToken(token: string | null) {
   }
   api.defaults.headers.common.Authorization = `Bearer ${token}`
 }
+
+// Ensure auth header is set immediately on first load (avoids a race where the
+// first API calls happen before AuthContext's effect runs, especially after
+// Stripe redirects).
+try {
+  const stored = localStorage.getItem('medilink.token')
+  if (stored) setAuthToken(stored)
+} catch {
+  // ignore (non-browser environments)
+}

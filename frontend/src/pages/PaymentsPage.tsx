@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
 import { Alert, Badge, Button, Card, Input, Label } from '../ui/primitives'
@@ -17,13 +18,13 @@ type PaymentIntentResponse = {
 }
 
 export function PaymentsPage() {
+  const navigate = useNavigate()
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loadingAppointments, setLoadingAppointments] = useState(false)
   const [appointmentsError, setAppointmentsError] = useState<string | null>(null)
   const [appointmentId, setAppointmentId] = useState('')
   const [amount, setAmount] = useState('1000')
   const [currency, setCurrency] = useState('LKR')
-  const [intent, setIntent] = useState<PaymentIntentResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -42,14 +43,12 @@ export function PaymentsPage() {
 
   function selectAppointment(id: number) {
     setAppointmentId(String(id))
-    setIntent(null)
     setError(null)
   }
 
   async function createIntent() {
     setLoading(true)
     setError(null)
-    setIntent(null)
     try {
       const parsedAppointmentId = Number.parseInt(appointmentId, 10)
       if (!Number.isFinite(parsedAppointmentId) || parsedAppointmentId <= 0) {
@@ -70,14 +69,15 @@ export function PaymentsPage() {
         return
       }
 
-      const res = await api.post<PaymentIntentResponse>('/payments/intents/payhere', {
+      const res = await api.post<PaymentIntentResponse>('/payments/intents/stripe', {
         appointmentId: parsedAppointmentId,
         amount: cleanedAmount,
         currency: cleanedCurrency,
       })
-      setIntent(res.data)
+
+      window.location.assign(res.data.checkoutUrl)
     } catch (err: any) {
-      setError(formatApiError(err, 'Failed to create payment intent'))
+      setError(formatApiError(err, 'Failed to start Stripe checkout'))
     } finally {
       setLoading(false)
     }
@@ -86,6 +86,36 @@ export function PaymentsPage() {
   useEffect(() => {
     void loadAppointments()
   }, [])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const provider = (params.get('provider') || '').toLowerCase()
+    const result = (params.get('result') || '').toLowerCase()
+
+    if (provider !== 'stripe') return
+
+    if (result === 'cancel') {
+      setError('Payment was cancelled')
+      navigate('/app/payments', { replace: true })
+      return
+    }
+
+    const sessionId = params.get('session_id')
+    if (result !== 'success' || !sessionId) return
+
+    void (async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        await api.post(`/payments/stripe/confirm?sessionId=${encodeURIComponent(sessionId)}`)
+        navigate('/app/appointments', { replace: true })
+      } catch (err: any) {
+        setError(formatApiError(err, 'Payment succeeded, but confirmation failed'))
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [navigate])
 
   return (
     <div className="space-y-6">
@@ -205,40 +235,12 @@ export function PaymentsPage() {
         )}
       </Card>
 
-      {intent && (
-        <Card>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="text-sm font-semibold text-slate-900">PayHere checkout</div>
-              <div className="mt-1 text-xs text-slate-500">You will be redirected to PayHere to complete your payment.</div>
-            </div>
-            {appointmentId.trim() && <Badge className="font-mono">Appointment #{appointmentId}</Badge>}
-          </div>
-
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div className="text-xs text-slate-500">Amount</div>
-              <div className="mt-1 text-sm font-semibold text-slate-900">{amount.trim() || '—'}</div>
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div className="text-xs text-slate-500">Currency</div>
-              <div className="mt-1 text-sm font-semibold text-slate-900">{currency.trim().toUpperCase() || '—'}</div>
-            </div>
-          </div>
-
-          <form className="mt-4 flex flex-wrap items-center gap-2" method="POST" action={intent.checkoutUrl}>
-            {Object.entries(intent.formFields).map(([k, v]) => (
-              <input key={k} type="hidden" name={k} value={v} />
-            ))}
-            <Button type="submit">Pay now</Button>
-            <Button variant="secondary" type="button" onClick={() => setIntent(null)}>
-              Close
-            </Button>
-          </form>
-
-          <div className="mt-3 text-xs text-slate-500">After payment, refresh Appointments to see the updated status.</div>
-        </Card>
-      )}
+      <Card>
+        <div className="text-sm font-semibold text-slate-900">Stripe checkout</div>
+        <div className="mt-1 text-xs text-slate-500">
+          Clicking “Create payment intent” will redirect you to Stripe to complete your payment. After payment, refresh Appointments to see the updated status.
+        </div>
+      </Card>
     </div>
   )
 }

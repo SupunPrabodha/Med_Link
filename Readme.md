@@ -34,7 +34,7 @@ Admin workflows implemented in UI (marker-friendly):
 | `appointment-service` | 8082 | Appointment CRUD, publishes RabbitMQ events |
 | `notification-service` | 8083 | Consumes events, logs "email/SMS" notifications |
 | `doctor-service` | 8084 | Doctor onboarding + admin verification |
-| `payment-service` | 8085 | PayHere-style payment intents + notify callback (signature validation) |
+| `payment-service` | 8085 | Payments: PayHere intent + callback, and Stripe Checkout + webhook (signature verification) |
 
 ### Infrastructure (Docker)
 - PostgreSQL for Auth (`authdb`) on port `5432`
@@ -79,6 +79,8 @@ docker compose up -d --build
 Optional configuration (host env vars or a `.env` file next to `docker-compose.yml`):
 - `PAYHERE_MERCHANT_ID` (defaults to `1211149`)
 - `PAYHERE_MERCHANT_SECRET` (defaults to `change-me`)
+- `STRIPE_SECRET_KEY` (Stripe test secret key)
+- `STRIPE_WEBHOOK_SECRET` (Stripe webhook signing secret)
 - `APP_GATEWAY_BASE_URL` (defaults to `http://api-gateway:8090` inside Docker)
 
 Key URLs:
@@ -96,7 +98,7 @@ docker compose down
 ### ✅ One-command workflow verification (recommended)
 
 This script runs a complete marker-friendly flow through the **gateway**:
-`ADMIN + DOCTOR + PATIENT` registration → doctor profile → admin approval → appointment → PayHere intent → **signed notify callback** → appointment becomes **CONFIRMED**.
+`ADMIN + DOCTOR + PATIENT` registration → doctor profile → admin approval → appointment → payment intent → **signed provider callback** → appointment becomes **CONFIRMED**.
 
 ```powershell
 cd "F:\Projects\DS Project"
@@ -105,6 +107,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke-test.ps1
 
 Notes:
 - By default the smoke test does **not** force Docker rebuilds (more stable on lab machines). To force rebuilds set `SMOKE_BUILD=1`.
+- Default payment provider is PayHere. To run in Stripe mode: set `SMOKE_PAYMENT_PROVIDER=stripe` and ensure `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` are available (in your shell env or in `.env`).
 - If you override `PAYHERE_MERCHANT_SECRET` for Compose, also set the same value when running the smoke test (so it can generate a valid `md5sig`).
 
 ### Option 2 (dev): Start infrastructure only, run services via Maven

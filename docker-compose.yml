@@ -136,9 +136,9 @@ services:
       SERVER_PORT: "8081"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://service-discovery:8761/eureka"
       SECURITY_JWT_SECRET: "change-me-to-a-long-32bytes-min-secret-change-me"
-      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-auth:5432/authdb"
-      SPRING_DATASOURCE_USERNAME: "auth"
-      SPRING_DATASOURCE_PASSWORD: "auth"
+      SPRING_DATASOURCE_URL: "${AUTH_DB_URL:-jdbc:postgresql://postgres-auth:5432/authdb}"
+      SPRING_DATASOURCE_USERNAME: "${AUTH_DB_USER:-auth}"
+      SPRING_DATASOURCE_PASSWORD: "${AUTH_DB_PASS:-auth}"
     depends_on:
       service-discovery:
         condition: service_started
@@ -157,9 +157,9 @@ services:
     environment:
       SERVER_PORT: "8086"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://service-discovery:8761/eureka"
-      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-patient:5432/patientdb"
-      SPRING_DATASOURCE_USERNAME: "patient"
-      SPRING_DATASOURCE_PASSWORD: "patient"
+      SPRING_DATASOURCE_URL: "${PATIENT_DB_URL:-jdbc:postgresql://postgres-patient:5432/patientdb}"
+      SPRING_DATASOURCE_USERNAME: "${PATIENT_DB_USER:-patient}"
+      SPRING_DATASOURCE_PASSWORD: "${PATIENT_DB_PASS:-patient}"
     depends_on:
       service-discovery:
         condition: service_started
@@ -179,9 +179,9 @@ services:
       SERVER_PORT: "8084"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://service-discovery:8761/eureka"
       SPRING_RABBITMQ_HOST: "rabbitmq"
-      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-doctor:5432/doctordb"
-      SPRING_DATASOURCE_USERNAME: "doctor"
-      SPRING_DATASOURCE_PASSWORD: "doctor"
+      SPRING_DATASOURCE_URL: "${DOCTOR_DB_URL:-jdbc:postgresql://postgres-doctor:5432/doctordb}"
+      SPRING_DATASOURCE_USERNAME: "${DOCTOR_DB_USER:-doctor}"
+      SPRING_DATASOURCE_PASSWORD: "${DOCTOR_DB_PASS:-doctor}"
     depends_on:
       service-discovery:
         condition: service_started
@@ -205,9 +205,9 @@ services:
       SPRING_RABBITMQ_HOST: "rabbitmq"
       APP_DOCTOR_BASE_URL: "http://doctor-service:8084"
       APP_PATIENT_BASE_URL: "http://patient-service:8086"
-      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-appointment:5432/appointmentdb"
-      SPRING_DATASOURCE_USERNAME: "appointment"
-      SPRING_DATASOURCE_PASSWORD: "appointment"
+      SPRING_DATASOURCE_URL: "${APPOINTMENT_DB_URL:-jdbc:postgresql://postgres-appointment:5432/appointmentdb}"
+      SPRING_DATASOURCE_USERNAME: "${APPOINTMENT_DB_USER:-appointment}"
+      SPRING_DATASOURCE_PASSWORD: "${APPOINTMENT_DB_PASS:-appointment}"
     depends_on:
       service-discovery:
         condition: service_started
@@ -229,14 +229,17 @@ services:
       SERVER_PORT: "8085"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://service-discovery:8761/eureka"
       SPRING_RABBITMQ_HOST: "rabbitmq"
-      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-payment:5432/paymentdb"
-      SPRING_DATASOURCE_USERNAME: "payment"
-      SPRING_DATASOURCE_PASSWORD: "payment"
+      SPRING_DATASOURCE_URL: "${PAYMENT_DB_URL:-jdbc:postgresql://postgres-payment:5432/paymentdb}"
+      SPRING_DATASOURCE_USERNAME: "${PAYMENT_DB_USER:-payment}"
+      SPRING_DATASOURCE_PASSWORD: "${PAYMENT_DB_PASS:-payment}"
       APP_APPOINTMENT_BASE_URL: "${APP_APPOINTMENT_BASE_URL:-http://appointment-service:8082}"
       APP_PATIENT_BASE_URL: "${APP_PATIENT_BASE_URL:-http://patient-service:8086}"
       APP_GATEWAY_BASE_URL: "${APP_GATEWAY_BASE_URL:-http://localhost:8090}"
+      APP_FRONTEND_BASE_URL: "${APP_FRONTEND_BASE_URL:-http://localhost:5173}"
       PAYHERE_MERCHANT_ID: "${PAYHERE_MERCHANT_ID:-1211149}"
       PAYHERE_MERCHANT_SECRET: "${PAYHERE_MERCHANT_SECRET:-change-me}"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
     depends_on:
       service-discovery:
         condition: service_started
@@ -279,9 +282,9 @@ services:
       SPRING_RABBITMQ_HOST: "rabbitmq"
       APP_JITSI_BASE_URL: "${APP_JITSI_BASE_URL:-https://meet.jit.si}"
       APP_DOCTOR_BASE_URL: "${APP_DOCTOR_BASE_URL:-http://doctor-service:8084}"
-      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-telemedicine:5432/telemedicinedb"
-      SPRING_DATASOURCE_USERNAME: "telemedicine"
-      SPRING_DATASOURCE_PASSWORD: "telemedicine"
+      SPRING_DATASOURCE_URL: "${TELEMEDICINE_DB_URL:-jdbc:postgresql://postgres-telemedicine:5432/telemedicinedb}"
+      SPRING_DATASOURCE_USERNAME: "${TELEMEDICINE_DB_USER:-telemedicine}"
+      SPRING_DATASOURCE_PASSWORD: "${TELEMEDICINE_DB_PASS:-telemedicine}"
     depends_on:
       service-discovery:
         condition: service_started

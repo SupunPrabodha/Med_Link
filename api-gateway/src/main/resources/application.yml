@@ -29,6 +29,10 @@ spring:
           uri: lb://payment-service
           predicates:
             - Path=/api/payments/callback/payhere
+        - id: stripe-callback
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payments/callback/stripe
         - id: appointment-doctor-view
           uri: lb://appointment-service
           predicates:

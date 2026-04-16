@@ -1,6 +1,10 @@
 package lk.medilink.payment.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.stripe.Stripe;
+import com.stripe.exception.StripeException;
+import com.stripe.model.checkout.Session;
+import com.stripe.param.checkout.SessionCreateParams;
 import lk.medilink.payment.domain.Payment;
 import lk.medilink.payment.domain.PaymentStatus;
 import lk.medilink.payment.messaging.PaymentEvents;
@@ -45,24 +49,30 @@ public class PaymentAppService {
 	private final RabbitTemplate rabbit;
 	private final RestTemplate rest;
 	private final PayHereConfig payhere;
+	private final String stripeSecretKey;
 	private final String appointmentBaseUrl;
 	private final String patientBaseUrl;
 	private final String gatewayBaseUrl;
+	private final String frontendBaseUrl;
 
 	public PaymentAppService(PaymentRepository repo,
 	                        RabbitTemplate rabbit,
 	                        RestTemplateBuilder restBuilder,
 	                        PayHereConfig payhere,
+	                        @Value("${stripe.secret-key:}") String stripeSecretKey,
 	                        @Value("${app.appointment-base-url:http://localhost:8082}") String appointmentBaseUrl,
 	                        @Value("${app.patient-base-url:http://localhost:8086}") String patientBaseUrl,
-	                        @Value("${app.gateway-base-url:http://localhost:8090}") String gatewayBaseUrl) {
+	                        @Value("${app.gateway-base-url:http://localhost:8090}") String gatewayBaseUrl,
+	                        @Value("${app.frontend-base-url:http://localhost:5173}") String frontendBaseUrl) {
 		this.repo = repo;
 		this.rabbit = rabbit;
 		this.rest = restBuilder.build();
 		this.payhere = payhere;
+		this.stripeSecretKey = stripeSecretKey;
 		this.appointmentBaseUrl = appointmentBaseUrl;
 		this.patientBaseUrl = patientBaseUrl;
 		this.gatewayBaseUrl = gatewayBaseUrl;
+		this.frontendBaseUrl = frontendBaseUrl;
 	}
 
 	@Transactional
@@ -151,8 +161,8 @@ public class PaymentAppService {
 		String hash = PayHereSignature.buildCheckoutHash(merchantId, orderId, amountStr, currency, merchantSecret);
 
 		String notifyUrl = gatewayBaseUrl + "/api/payments/callback/payhere";
-		String returnUrl = gatewayBaseUrl + "/swagger";
-		String cancelUrl = gatewayBaseUrl + "/swagger";
+		String returnUrl = frontendBaseUrl + "/app/payments?provider=payhere&result=success";
+		String cancelUrl = frontendBaseUrl + "/app/payments?provider=payhere&result=cancel";
 
 		Map<String, String> fields = new LinkedHashMap<>();
 		fields.put("merchant_id", merchantId);
@@ -180,6 +190,145 @@ public class PaymentAppService {
 		fields.put("hash", hash);
 
 		return new PaymentIntentResponse(payhere.checkoutUrl(), fields);
+	}
+
+	@Transactional
+	public PaymentIntentResponse createStripeCheckoutIntent(Long patientId,
+	                                                      String patientEmail,
+	                                                      Long appointmentId,
+	                                                      BigDecimal amount,
+	                                                      String currency) {
+		if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid amount");
+		}
+		if (stripeSecretKey == null || stripeSecretKey.isBlank()) {
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Stripe is not configured");
+		}
+
+		AppointmentRow appt;
+		try {
+			HttpHeaders headers = new HttpHeaders();
+			headers.set("X-User-Id", String.valueOf(patientId));
+			ResponseEntity<AppointmentRow[]> resp = rest.exchange(
+					appointmentBaseUrl + "/api/appointments",
+					HttpMethod.GET,
+					new HttpEntity<>(headers),
+					AppointmentRow[].class
+			);
+			AppointmentRow[] body = resp.getBody();
+			appt = body == null
+					? null
+					: Arrays.stream(body).filter(a -> appointmentId.equals(a.id())).findFirst().orElse(null);
+		} catch (RestClientException ex) {
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Appointment service unavailable");
+		}
+
+		if (appt == null) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment not found");
+		}
+		if (!"PENDING_PAYMENT".equals(appt.status())) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Appointment is not payable");
+		}
+		if (!"APPROVED".equals(appt.appoinmentApproval())) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Doctor approval required");
+		}
+
+		String orderId = "ML-" + UUID.randomUUID();
+		repo.save(new Payment(orderId, appointmentId, patientId, amount, currency));
+
+		String successUrl = frontendBaseUrl + "/app/payments?provider=stripe&result=success&session_id={CHECKOUT_SESSION_ID}";
+		String cancelUrl = frontendBaseUrl + "/app/payments?provider=stripe&result=cancel";
+
+		long unitAmount;
+		try {
+			unitAmount = amount.movePointRight(2).setScale(0, RoundingMode.HALF_UP).longValueExact();
+		} catch (ArithmeticException ex) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid amount");
+		}
+
+		try {
+			Stripe.apiKey = stripeSecretKey;
+
+			SessionCreateParams.Builder b = SessionCreateParams.builder()
+					.setMode(SessionCreateParams.Mode.PAYMENT)
+					.setClientReferenceId(orderId)
+					.setSuccessUrl(successUrl)
+					.setCancelUrl(cancelUrl)
+					.addLineItem(
+							SessionCreateParams.LineItem.builder()
+									.setQuantity(1L)
+									.setPriceData(
+											SessionCreateParams.LineItem.PriceData.builder()
+													.setCurrency(currency.toLowerCase())
+													.setUnitAmount(unitAmount)
+													.setProductData(
+															SessionCreateParams.LineItem.PriceData.ProductData.builder()
+																	.setName("MediLink appointment")
+																	.build()
+													)
+													.build()
+									)
+									.build()
+					)
+					.putMetadata("appointmentId", String.valueOf(appointmentId))
+					.putMetadata("patientId", String.valueOf(patientId));
+
+			if (patientEmail != null && !patientEmail.isBlank()) {
+				b.setCustomerEmail(patientEmail.trim());
+			}
+
+			Session session = Session.create(b.build());
+			if (session.getUrl() == null || session.getUrl().isBlank()) {
+				throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Stripe checkout URL not available");
+			}
+
+			return new PaymentIntentResponse(session.getUrl(), Map.of("orderId", orderId));
+		} catch (StripeException ex) {
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Stripe error: " + ex.getMessage());
+		}
+	}
+
+	@Transactional
+	public void confirmStripeCheckoutSession(Long patientId, String sessionId) {
+		if (sessionId == null || sessionId.isBlank()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing sessionId");
+		}
+		if (stripeSecretKey == null || stripeSecretKey.isBlank()) {
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Stripe is not configured");
+		}
+
+		try {
+			Stripe.apiKey = stripeSecretKey;
+			Session session = Session.retrieve(sessionId.trim());
+
+			String orderId = session.getClientReferenceId();
+			if (orderId == null || orderId.isBlank()) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Stripe session missing client_reference_id");
+			}
+
+			Payment p = repo.findByOrderId(orderId)
+					.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found"));
+			if (!p.getPatientId().equals(patientId)) {
+				throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Forbidden");
+			}
+			if (p.getStatus() == PaymentStatus.COMPLETED) {
+				return;
+			}
+
+			String paymentStatus = session.getPaymentStatus();
+			if (!"paid".equalsIgnoreCase(paymentStatus)) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payment not completed");
+			}
+
+			String providerRef = session.getPaymentIntent();
+			if (providerRef == null || providerRef.isBlank()) {
+				providerRef = session.getId();
+			}
+
+			markCompleted(orderId, providerRef, Instant.now());
+		} catch (StripeException ex) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Stripe session not valid");
+		}
 	}
 
 	@Transactional

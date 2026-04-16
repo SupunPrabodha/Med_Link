@@ -70,6 +70,14 @@ $pw = "Passw0rd!"
 
 $gateway = "http://localhost:8090"
 
+$paymentProvider = $env:SMOKE_PAYMENT_PROVIDER
+if (-not $paymentProvider) { $paymentProvider = "payhere" }
+$paymentProvider = $paymentProvider.ToLowerInvariant()
+if (($paymentProvider -ne "payhere") -and ($paymentProvider -ne "stripe")) {
+  throw "Invalid SMOKE_PAYMENT_PROVIDER='$paymentProvider' (expected 'payhere' or 'stripe')"
+}
+Write-Host "Smoke payment provider: $paymentProvider"
+
 Wait-ForHttp -Name "gateway health" -OkStatuses @(200) -Request {
   Invoke-WebRequest -UseBasicParsing "$gateway/actuator/health" -TimeoutSec 2
 }
@@ -259,37 +267,101 @@ if ($approvedAppt.appoinmentApproval -ne "APPROVED") {
   throw "Expected doctor approval APPROVED; got '$($approvedAppt.appoinmentApproval)'"
 }
 
-# Create PayHere payment intent
+# Create payment intent + simulate provider callback
 $intentBody = @{ appointmentId = $appt.id; amount = 1000.00; currency = "LKR" } | ConvertTo-Json
-$intent = Invoke-RestMethod -Method Post -Uri "$gateway/api/payments/intents/payhere" -ContentType "application/json" -Headers $patientHeaders -Body $intentBody
 
-$merchantId = $intent.formFields.merchant_id
-$orderId = $intent.formFields.order_id
-$amount = $intent.formFields.amount
-$currency = $intent.formFields.currency
+if ($paymentProvider -eq "stripe") {
+  $intent = Invoke-RestMethod -Method Post -Uri "$gateway/api/payments/intents/stripe" -ContentType "application/json" -Headers $patientHeaders -Body $intentBody
+  Write-Host "Stripe checkoutUrl=$($intent.checkoutUrl)"
 
-# Simulate PayHere notify callback (status_code=2 success)
-$statusCode = "2"
+  $orderId = $intent.formFields.orderId
+  if (-not $orderId) {
+    throw "Stripe intent did not return formFields.orderId"
+  }
 
-function Md5Upper([string]$s) {
-  $md5 = [System.Security.Cryptography.MD5]::Create()
-  if ($null -eq $s) { $s = "" }
-  $bytes = [System.Text.Encoding]::UTF8.GetBytes($s)
-  $hashBytes = $md5.ComputeHash($bytes)
-  -join ($hashBytes | ForEach-Object { $_.ToString('x2') }) | ForEach-Object { $_.ToUpper() }
+  $webhookSecret = $env:STRIPE_WEBHOOK_SECRET
+  if (-not $webhookSecret) {
+    $dotEnvPath = Join-Path $repoRoot ".env"
+    if (Test-Path $dotEnvPath) {
+      $line = Get-Content $dotEnvPath | Where-Object { $_ -match '^STRIPE_WEBHOOK_SECRET=' } | Select-Object -First 1
+      if ($line) {
+        $webhookSecret = $line.Substring("STRIPE_WEBHOOK_SECRET=".Length)
+      }
+    }
+  }
+  if (-not $webhookSecret) {
+    throw "Missing STRIPE_WEBHOOK_SECRET (set it in your shell or in .env next to docker-compose.yml)"
+  }
+
+  function HmacSha256Hex([string]$key, [string]$msg) {
+    $h = New-Object System.Security.Cryptography.HMACSHA256([System.Text.Encoding]::UTF8.GetBytes($key))
+    $hashBytes = $h.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($msg))
+    -join ($hashBytes | ForEach-Object { $_.ToString('x2') })
+  }
+
+  $t = [int][DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+  $evt = @{
+    id = "evt_smoke_$suffix"
+    object = "event"
+    created = $t
+    type = "checkout.session.completed"
+    data = @{
+      object = @{
+        id = "cs_smoke_$suffix"
+        object = "checkout.session"
+        client_reference_id = $orderId
+        payment_intent = "pi_smoke_$suffix"
+      }
+    }
+  }
+
+  $payload = $evt | ConvertTo-Json -Depth 10 -Compress
+  $sig = HmacSha256Hex $webhookSecret ("$t.$payload")
+  $sigHeader = "t=$t,v1=$sig"
+
+  $stripeResp = Invoke-RestMethod -Method Post -Uri "$gateway/api/payments/callback/stripe" -ContentType "application/json" -Headers @{ "Stripe-Signature" = $sigHeader } -Body $payload
+  Write-Host "Stripe webhook response: $stripeResp"
+} else {
+  $intent = Invoke-RestMethod -Method Post -Uri "$gateway/api/payments/intents/payhere" -ContentType "application/json" -Headers $patientHeaders -Body $intentBody
+
+  $merchantId = $intent.formFields.merchant_id
+  $orderId = $intent.formFields.order_id
+  $amount = $intent.formFields.amount
+  $currency = $intent.formFields.currency
+
+  # Simulate PayHere notify callback (status_code=2 success)
+  $statusCode = "2"
+
+  function Md5Upper([string]$s) {
+    $md5 = [System.Security.Cryptography.MD5]::Create()
+    if ($null -eq $s) { $s = "" }
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($s)
+    $hashBytes = $md5.ComputeHash($bytes)
+    -join ($hashBytes | ForEach-Object { $_.ToString('x2') }) | ForEach-Object { $_.ToUpper() }
+  }
+
+  $merchantSecret = $env:PAYHERE_MERCHANT_SECRET
+  if (-not $merchantSecret) {
+    $dotEnvPath = Join-Path $repoRoot ".env"
+    if (Test-Path $dotEnvPath) {
+      $line = Get-Content $dotEnvPath | Where-Object { $_ -match '^PAYHERE_MERCHANT_SECRET=' } | Select-Object -First 1
+      if ($line) {
+        $merchantSecret = $line.Substring("PAYHERE_MERCHANT_SECRET=".Length)
+      }
+    }
+  }
+  if (-not $merchantSecret) {
+    # Keep in sync with docker-compose.yml default for marker-friendly runs.
+    $merchantSecret = "change-me"
+  }
+
+  $secretHash = Md5Upper $merchantSecret
+  $md5sig = Md5Upper ("$merchantId$orderId$amount$currency$statusCode$secretHash")
+
+  $notifyBody = @{ merchant_id = $merchantId; order_id = $orderId; payhere_amount = $amount; payhere_currency = $currency; status_code = $statusCode; md5sig = $md5sig; payment_id = "smoke-$suffix" }
+  $notifyResp = Invoke-RestMethod -Method Post -Uri "$gateway/api/payments/callback/payhere" -ContentType "application/x-www-form-urlencoded" -Body $notifyBody
+  Write-Host "PayHere notify response: $notifyResp"
 }
-
-$merchantSecret = $env:PAYHERE_MERCHANT_SECRET
-if (-not $merchantSecret) {
-  # Keep in sync with docker-compose.yml default for marker-friendly runs.
-  $merchantSecret = "change-me"
-}
-$secretHash = Md5Upper $merchantSecret
-$md5sig = Md5Upper ("$merchantId$orderId$amount$currency$statusCode$secretHash")
-
-$notifyBody = @{ merchant_id = $merchantId; order_id = $orderId; payhere_amount = $amount; payhere_currency = $currency; status_code = $statusCode; md5sig = $md5sig; payment_id = "smoke-$suffix" }
-$notifyResp = Invoke-RestMethod -Method Post -Uri "$gateway/api/payments/callback/payhere" -ContentType "application/x-www-form-urlencoded" -Body $notifyBody
-Write-Host "PayHere notify response: $notifyResp"
 
 Write-Host "[5/7] Waiting for async confirmation (RabbitMQ event -> appointment CONFIRMED)..."
 $deadline = (Get-Date).AddSeconds(30)
