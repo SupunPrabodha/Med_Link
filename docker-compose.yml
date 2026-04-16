@@ -95,6 +95,22 @@ services:
       timeout: 5s
       retries: 20
 
+  postgres-prescription:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: prescriptiondb
+      POSTGRES_USER: prescription
+      POSTGRES_PASSWORD: prescription
+    ports:
+      - "5438:5432"
+    volumes:
+      - pg_prescription_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prescription -d prescriptiondb"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -282,6 +298,27 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  prescription-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: prescription-service
+    image: medilink/prescription-service:0.1.0
+    ports:
+      - "8088:8088"
+    environment:
+      SERVER_PORT: "8088"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://service-discovery:8761/eureka"
+      SPRING_DATASOURCE_URL: "${PRESCRIPTION_DB_URL:-jdbc:postgresql://postgres-prescription:5432/prescriptiondb}"
+      SPRING_DATASOURCE_USERNAME: "${PRESCRIPTION_DB_USER:-prescription}"
+      SPRING_DATASOURCE_PASSWORD: "${PRESCRIPTION_DB_PASS:-prescription}"
+    depends_on:
+      service-discovery:
+        condition: service_started
+      postgres-prescription:
+        condition: service_healthy
+
   telemedicine-service:
     build:
       context: .
@@ -334,6 +371,8 @@ services:
         condition: service_started
       notification-service:
         condition: service_started
+      prescription-service:
+        condition: service_started
       patient-service:
         condition: service_started
       telemedicine-service:
@@ -359,4 +398,5 @@ volumes:
   pg_payment_data:
   pg_patient_data:
   pg_telemedicine_data:
+  pg_prescription_data:
   rabbitmq_data:

@@ -26,9 +26,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Service
 public class PatientAppService {
+	private static final Pattern E164 = Pattern.compile("^\\+[1-9]\\d{7,14}$");
 	private static final long MAX_REPORT_BYTES = 5L * 1024 * 1024;
 	private static final long MAX_PHOTO_BYTES = 2L * 1024 * 1024;
 	private static final Set<String> ALLOWED_PHOTO_CONTENT_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
@@ -47,10 +49,15 @@ public class PatientAppService {
 
 	@Transactional
 	public PatientProfile upsertProfile(Long userId, String fullName, String phone, LocalDate dateOfBirth, String address) {
+		String normalizedPhone = normalizeToE164(phone);
+		if (normalizedPhone == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Phone number is invalid; use +[country][number] (E.164) or a local 0XXXXXXXXX format");
+		}
+
 		PatientProfile p = profiles.findByUserId(userId)
-				.orElseGet(() -> profiles.save(new PatientProfile(userId, fullName, phone, dateOfBirth, address)));
+				.orElseGet(() -> profiles.save(new PatientProfile(userId, fullName, normalizedPhone, dateOfBirth, address)));
 		p.setFullName(fullName);
-		p.setPhone(phone);
+		p.setPhone(normalizedPhone);
 		p.setDateOfBirth(dateOfBirth);
 		p.setAddress(address);
 		return profiles.save(p);
@@ -204,6 +211,24 @@ public class PatientAppService {
 	public void deleteReport(Long userId, Long reportId) {
 		MedicalReport r = getReport(userId, reportId);
 		reports.delete(r);
+	}
+
+	private static String normalizeToE164(String raw) {
+		if (raw == null) return null;
+		String s = raw.trim();
+		if (s.isEmpty()) return null;
+		s = s.replaceAll("[\\s\\-()]+", "");
+		if (s.startsWith("00")) {
+			s = "+" + s.substring(2);
+		} else if (!s.startsWith("+")) {
+			// Sri Lanka local format support: 0XXXXXXXXX -> +94XXXXXXXXX
+			if (s.matches("^0\\d{9}$")) {
+				s = "+94" + s.substring(1);
+			} else if (s.matches("^94\\d{9}$")) {
+				s = "+" + s;
+			}
+		}
+		return E164.matcher(s).matches() ? s : null;
 	}
 
 	private static String blankToNull(String s) {

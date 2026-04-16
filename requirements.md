@@ -16,6 +16,7 @@ Implemented services (see `Readme.md` for ports and workflow):
 - Telemedicine Service (Jitsi-based sessions)
 - Payment Service (Stripe Checkout + webhook; PayHere flow kept for compatibility)
 - Notification Service (consumes events + in-app notifications; optional real Email/SMS delivery when configured)
+- Prescription Service (issue + list digital prescriptions)
 
 Implemented UI (React + Vite + Tailwind) under `frontend/`:
 - Auth (register/login)
@@ -25,11 +26,12 @@ Implemented UI (React + Vite + Tailwind) under `frontend/`:
 - Appointments (patient + doctor + admin flows)
 - Payments (checkout initiation + return)
 - Notifications page (in-app)
+- Prescriptions (patient view)
+- Prescriptions (doctor issue + history)
 - Admin pages (users, doctors, patients, payments, appointments)
 - System status page (health checks)
 
 Still not implemented (planned / optional):
-- Digital prescriptions
 - AI symptom checker
 - Persistent notification storage (current notifications are in-memory)
 
@@ -78,6 +80,7 @@ This system is designed to follow **distributed systems principles**, using **in
 - Telemedicine Service
 - Payment Service
 - Notification Service
+- Prescription Service
 - AI Symptom Checker Service (optional)
 
 ---
@@ -91,7 +94,7 @@ This system is designed to follow **distributed systems principles**, using **in
 - React Router
 
 ### Backend (Microservices)
-- Java 21
+- Java 17
 - Spring Boot
 - Spring Web
 - Spring Data JPA
@@ -182,8 +185,8 @@ This system is designed to follow **distributed systems principles**, using **in
 
 ### 5. Appointment Service
 - Booking system
-- Cancel/reschedule
-- Appointment lifecycle tracking
+- Cancel appointments
+- Appointment lifecycle tracking (status + doctor approval)
 
 ### 6. Telemedicine Service
 - Video session creation
@@ -195,10 +198,14 @@ This system is designed to follow **distributed systems principles**, using **in
 - Transaction validation
 
 ### 8. Notification Service
-- Email/SMS notifications
+- Email/SMS notifications (optional; when configured)
 - Event-driven alerts
 
-### 9. AI Symptom Checker Service (Optional)
+### 9. Prescription Service
+- Issue digital prescriptions (doctor)
+- View prescriptions (patient)
+
+### 10. AI Symptom Checker Service (Optional)
 - Analyze symptoms
 - Suggest medical specialty
 

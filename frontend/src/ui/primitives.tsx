@@ -34,6 +34,19 @@ export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   )
 }
 
+export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const { className, ...rest } = props
+  return (
+    <textarea
+      className={cn(
+        'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500',
+        className,
+      )}
+      {...rest}
+    />
+  )
+}
+
 export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   const { className, ...rest } = props
   return (

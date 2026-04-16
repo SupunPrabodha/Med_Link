@@ -29,6 +29,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,6 +40,7 @@ public class DoctorAppService {
 	private static final int MAX_SLOTS_RESPONSE = 1000;
 	private static final long MAX_PHOTO_BYTES = 2L * 1024 * 1024;
 	private static final Set<String> ALLOWED_PHOTO_CONTENT_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
+	private static final Pattern E164 = Pattern.compile("^\\+[1-9]\\d{7,14}$");
 
 	private final DoctorProfileRepository repo;
 	private final DoctorAvailabilityBlockRepository availabilityRepo;
@@ -61,7 +63,12 @@ public class DoctorAppService {
 				.orElseGet(() -> new DoctorProfile(userId, fullName, registrationNo, specialization, documentsUrl));
 
 		profile.setFullName(fullName);
-		profile.setPhone(blankToNull(phone));
+		String phoneTrimmed = blankToNull(phone);
+		String normalizedPhone = phoneTrimmed == null ? null : normalizeToE164(phoneTrimmed);
+		if (phoneTrimmed != null && normalizedPhone == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Phone number is invalid; use +[country][number] (E.164) or a local 0XXXXXXXXX format");
+		}
+		profile.setPhone(normalizedPhone);
 		profile.setRegistrationNo(registrationNo);
 		profile.setSpecialization(specialization);
 		profile.setDocumentsUrl(documentsUrl);
@@ -331,6 +338,24 @@ public class DoctorAppService {
 				new DoctorEvents.DoctorRejected(saved.getId(), saved.getUserId(), reason, Instant.now()));
 
 		return saved;
+	}
+
+	private static String normalizeToE164(String raw) {
+		if (raw == null) return null;
+		String s = raw.trim();
+		if (s.isEmpty()) return null;
+		s = s.replaceAll("[\\s\\-()]+", "");
+		if (s.startsWith("00")) {
+			s = "+" + s.substring(2);
+		} else if (!s.startsWith("+")) {
+			// Sri Lanka local format support: 0XXXXXXXXX -> +94XXXXXXXXX
+			if (s.matches("^0\\d{9}$")) {
+				s = "+94" + s.substring(1);
+			} else if (s.matches("^94\\d{9}$")) {
+				s = "+" + s;
+			}
+		}
+		return E164.matcher(s).matches() ? s : null;
 	}
 
 	private static String blankToNull(String s) {

@@ -121,6 +121,22 @@ spring:
             - name: JwtAuthGatewayFilter
               args:
                 requiredRoles: ["ADMIN"]
+        - id: prescription-service
+          uri: lb://prescription-service
+          predicates:
+            - Path=/api/prescriptions,/api/prescriptions/**
+          filters:
+            - name: JwtAuthGatewayFilter
+              args:
+                requiredRoles: ["PATIENT","DOCTOR","ADMIN"]
+        - id: prescription-admin
+          uri: lb://prescription-service
+          predicates:
+            - Path=/api/admin/prescriptions,/api/admin/prescriptions/**
+          filters:
+            - name: JwtAuthGatewayFilter
+              args:
+                requiredRoles: ["ADMIN"]
         - id: payment-admin
           uri: lb://payment-service
           predicates:
