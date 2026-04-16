@@ -7,6 +7,7 @@ import lk.medilink.patient.repo.MedicalReportSummary;
 import lk.medilink.patient.repo.PatientProfileRepository;
 import lk.medilink.patient.web.dto.InternalPatientWithReportsResponse;
 import lk.medilink.patient.web.dto.MedicalReportResponse;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +45,15 @@ public class PatientAppService {
 	}
 
 	public PatientProfile getOwnProfile(Long userId) {
+		return profiles.findByUserId(userId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
+	}
+
+	public List<PatientProfile> listAllProfiles() {
+		return profiles.findAll(Sort.by(Sort.Direction.DESC, "updatedAt"));
+	}
+
+	public PatientProfile getProfile(Long userId) {
 		return profiles.findByUserId(userId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
 	}

@@ -12,7 +12,10 @@ import { DoctorAppointmentsPage } from './pages/DoctorAppointmentsPage'
 import { DoctorPatientsPage } from './pages/DoctorPatientsPage'
 import { AdminDoctorsPage } from './pages/AdminDoctorsPage'
 import { AdminUsersPage } from './pages/AdminUsersPage'
+import { AdminPatientsPage } from './pages/AdminPatientsPage'
+import { AdminPaymentsPage } from './pages/AdminPaymentsPage'
 import { PaymentsPage } from './pages/PaymentsPage'
+import { NotificationsPage } from './pages/NotificationsPage'
 import { SystemStatusPage } from './pages/SystemStatusPage'
 import { PatientProfilePage } from './pages/PatientProfilePage'
 
@@ -50,9 +53,17 @@ export default function App() {
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route
+          path="notifications"
+          element={
+            <RequireRoles allow={['PATIENT', 'DOCTOR', 'ADMIN']}>
+              <NotificationsPage />
+            </RequireRoles>
+          }
+        />
+        <Route
           path="patient/profile"
           element={
-            <RequireRoles allow={['PATIENT', 'ADMIN']}>
+            <RequireRoles allow={['PATIENT']}>
               <PatientProfilePage />
             </RequireRoles>
           }
@@ -107,9 +118,25 @@ export default function App() {
           }
         />
         <Route
+          path="admin/patients"
+          element={
+            <RequireRoles allow={['ADMIN']}>
+              <AdminPatientsPage />
+            </RequireRoles>
+          }
+        />
+        <Route
+          path="admin/payments"
+          element={
+            <RequireRoles allow={['ADMIN']}>
+              <AdminPaymentsPage />
+            </RequireRoles>
+          }
+        />
+        <Route
           path="payments"
           element={
-            <RequireRoles allow={['PATIENT', 'ADMIN']}>
+            <RequireRoles allow={['PATIENT']}>
               <PaymentsPage />
             </RequireRoles>
           }

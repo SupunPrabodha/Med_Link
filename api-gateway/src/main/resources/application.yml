@@ -25,6 +25,14 @@ spring:
             - name: JwtAuthGatewayFilter
               args:
                 requiredRoles: ["PATIENT","ADMIN"]
+        - id: patient-admin
+          uri: lb://patient-service
+          predicates:
+            - Path=/api/admin/patients,/api/admin/patients/**
+          filters:
+            - name: JwtAuthGatewayFilter
+              args:
+                requiredRoles: ["ADMIN"]
         - id: payhere-callback
           uri: lb://payment-service
           predicates:
@@ -97,6 +105,30 @@ spring:
             - name: JwtAuthGatewayFilter
               args:
                 requiredRoles: ["PATIENT","DOCTOR","ADMIN"]
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/notifications,/api/notifications/**
+          filters:
+            - name: JwtAuthGatewayFilter
+              args:
+                requiredRoles: ["PATIENT","DOCTOR","ADMIN"]
+        - id: notification-admin
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/admin/notifications,/api/admin/notifications/**
+          filters:
+            - name: JwtAuthGatewayFilter
+              args:
+                requiredRoles: ["ADMIN"]
+        - id: payment-admin
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/admin/payments,/api/admin/payments/**
+          filters:
+            - name: JwtAuthGatewayFilter
+              args:
+                requiredRoles: ["ADMIN"]
         - id: payment-service
           uri: lb://payment-service
           predicates:

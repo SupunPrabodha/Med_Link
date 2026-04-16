@@ -9,6 +9,7 @@ public final class PaymentEvents {
 
 	public record PaymentCompleted(Long paymentId,
 	                              Long appointmentId,
+	                              Long patientId,
 	                              BigDecimal amount,
 	                              String orderId,
 	                              String providerRef,
@@ -17,6 +18,7 @@ public final class PaymentEvents {
 
 	public record PaymentFailed(Long paymentId,
 	                           Long appointmentId,
+	                           Long patientId,
 	                           BigDecimal amount,
 	                           String orderId,
 	                           String providerRef,

@@ -10,14 +10,17 @@ type NavItem = {
 
 const items: NavItem[] = [
 	{ label: 'Dashboard', to: '/app/dashboard' },
-	{ label: 'My Profile', to: '/app/patient/profile', show: (roles) => roles.includes('PATIENT') || roles.includes('ADMIN') },
+	{ label: 'Notifications', to: '/app/notifications', show: (roles) => roles.length > 0 },
+	{ label: 'My Profile', to: '/app/patient/profile', show: (roles) => roles.includes('PATIENT') },
 	{ label: 'Doctors', to: '/app/doctors' },
 	{ label: 'Appointments', to: '/app/appointments', show: (roles) => roles.includes('PATIENT') || roles.includes('ADMIN') },
-	{ label: 'Payments', to: '/app/payments', show: (roles) => roles.includes('PATIENT') || roles.includes('ADMIN') },
+	{ label: 'Payments', to: '/app/payments', show: (roles) => roles.includes('PATIENT') },
 	{ label: 'Doctor Profile', to: '/app/doctor/profile', show: (roles) => roles.includes('DOCTOR') },
 	{ label: 'Appointments', to: '/app/doctor/appointments', show: (roles) => roles.includes('DOCTOR') },
 	{ label: 'Patients', to: '/app/doctor/patients', show: (roles) => roles.includes('DOCTOR') },
 	{ label: 'Doctor Verification', to: '/app/admin/doctors', show: (roles) => roles.includes('ADMIN') },
+	{ label: 'Patients', to: '/app/admin/patients', show: (roles) => roles.includes('ADMIN') },
+	{ label: 'Payments', to: '/app/admin/payments', show: (roles) => roles.includes('ADMIN') },
 	{ label: 'User Management', to: '/app/admin/users', show: (roles) => roles.includes('ADMIN') },
 	{ label: 'Platform Status', to: '/app/status', show: (roles) => roles.includes('ADMIN') },
 ]

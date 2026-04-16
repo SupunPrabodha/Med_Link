@@ -16,6 +16,7 @@ import lk.medilink.payment.web.dto.PaymentIntentResponse;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -32,6 +33,7 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -73,6 +75,10 @@ public class PaymentAppService {
 		this.patientBaseUrl = patientBaseUrl;
 		this.gatewayBaseUrl = gatewayBaseUrl;
 		this.frontendBaseUrl = frontendBaseUrl;
+	}
+
+	public List<Payment> listAll() {
+		return repo.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
 	}
 
 	@Transactional
@@ -342,7 +348,7 @@ public class PaymentAppService {
 		repo.save(p);
 
 		rabbit.convertAndSend(RabbitConfig.EXCHANGE, "payment.completed",
-				new PaymentEvents.PaymentCompleted(p.getId(), p.getAppointmentId(), p.getAmount(), p.getOrderId(), p.getProviderRef(), paidAt));
+				new PaymentEvents.PaymentCompleted(p.getId(), p.getAppointmentId(), p.getPatientId(), p.getAmount(), p.getOrderId(), p.getProviderRef(), paidAt));
 	}
 
 	@Transactional
@@ -356,6 +362,6 @@ public class PaymentAppService {
 		repo.save(p);
 
 		rabbit.convertAndSend(RabbitConfig.EXCHANGE, "payment.failed",
-				new PaymentEvents.PaymentFailed(p.getId(), p.getAppointmentId(), p.getAmount(), p.getOrderId(), p.getProviderRef(), failedAt));
+				new PaymentEvents.PaymentFailed(p.getId(), p.getAppointmentId(), p.getPatientId(), p.getAmount(), p.getOrderId(), p.getProviderRef(), failedAt));
 	}
 }
