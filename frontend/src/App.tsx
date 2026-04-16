@@ -19,6 +19,7 @@ import { NotificationsPage } from './pages/NotificationsPage'
 import { SystemStatusPage } from './pages/SystemStatusPage'
 import { PatientProfilePage } from './pages/PatientProfilePage'
 import { PatientPrescriptionsPage } from './pages/PatientPrescriptionsPage'
+import { SymptomCheckerPage } from './pages/SymptomCheckerPage'
 import { DoctorPrescriptionsPage } from './pages/DoctorPrescriptionsPage'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -75,6 +76,14 @@ export default function App() {
           element={
             <RequireRoles allow={['PATIENT']}>
               <PatientPrescriptionsPage />
+            </RequireRoles>
+          }
+        />
+        <Route
+          path="patient/symptoms"
+          element={
+            <RequireRoles allow={['PATIENT']}>
+              <SymptomCheckerPage />
             </RequireRoles>
           }
         />

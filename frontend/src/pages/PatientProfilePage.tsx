@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Alert, Badge, Button, Card, Input, Label } from '../ui/primitives'
+import { Alert, Badge, Button, Card, Input, Label, Select } from '../ui/primitives'
 
 type PatientProfile = {
   id: number
@@ -10,6 +10,9 @@ type PatientProfile = {
   phone: string
   dateOfBirth: string | null
   address: string | null
+  gender?: string | null
+  emergencyContactName?: string | null
+  emergencyContactPhone?: string | null
   profilePhotoUrl?: string | null
   updatedAt: string
 }
@@ -49,6 +52,9 @@ export function PatientProfilePage() {
   const [phone, setPhone] = useState('')
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [address, setAddress] = useState('')
+  const [gender, setGender] = useState('')
+  const [emergencyContactName, setEmergencyContactName] = useState('')
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState('')
 
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoUploading, setPhotoUploading] = useState(false)
@@ -62,14 +68,26 @@ export function PatientProfilePage() {
   const [success, setSuccess] = useState<string | null>(null)
 
   const profileChanged = useMemo(() => {
-    if (!profile) return fullName.trim() || phone.trim() || dateOfBirth.trim() || address.trim()
+    if (!profile)
+      return (
+        fullName.trim() ||
+        phone.trim() ||
+        dateOfBirth.trim() ||
+        address.trim() ||
+        gender.trim() ||
+        emergencyContactName.trim() ||
+        emergencyContactPhone.trim()
+      )
     return (
       fullName !== profile.fullName ||
       phone !== profile.phone ||
       (dateOfBirth || '') !== (profile.dateOfBirth ?? '') ||
-      (address || '') !== (profile.address ?? '')
+      (address || '') !== (profile.address ?? '') ||
+      (gender || '') !== (profile.gender ?? '') ||
+      (emergencyContactName || '') !== (profile.emergencyContactName ?? '') ||
+      (emergencyContactPhone || '') !== (profile.emergencyContactPhone ?? '')
     )
-  }, [address, dateOfBirth, fullName, phone, profile])
+  }, [address, dateOfBirth, emergencyContactName, emergencyContactPhone, fullName, gender, phone, profile])
 
   async function loadAll() {
     setLoading(true)
@@ -86,6 +104,9 @@ export function PatientProfilePage() {
       setPhone(profileRes.data.phone)
       setDateOfBirth(profileRes.data.dateOfBirth ?? '')
       setAddress(profileRes.data.address ?? '')
+      setGender(profileRes.data.gender ?? '')
+      setEmergencyContactName(profileRes.data.emergencyContactName ?? '')
+      setEmergencyContactPhone(profileRes.data.emergencyContactPhone ?? '')
 
       setReports(reportsRes.data)
     } catch (err: any) {
@@ -117,6 +138,9 @@ export function PatientProfilePage() {
         phone: phone.trim(),
         dateOfBirth: dateOfBirth.trim() ? dateOfBirth.trim() : null,
         address: address.trim() ? address.trim() : null,
+        gender: gender.trim() ? gender.trim() : null,
+        emergencyContactName: emergencyContactName.trim() ? emergencyContactName.trim() : null,
+        emergencyContactPhone: emergencyContactPhone.trim() ? emergencyContactPhone.trim() : null,
       }
       const res = await api.post<PatientProfile>('/patients/me/profile', payload)
       setProfile(res.data)
@@ -273,6 +297,17 @@ export function PatientProfilePage() {
             </div>
           </div>
           <div>
+            <Label>Gender (optional)</Label>
+            <div className="mt-1">
+              <Select value={gender} onChange={(e) => setGender(e.target.value)} disabled={loading}>
+                <option value="">Prefer not to say</option>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHER">Other</option>
+              </Select>
+            </div>
+          </div>
+          <div>
             <Label>Date of birth (optional)</Label>
             <div className="mt-1">
               <Input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
@@ -282,6 +317,18 @@ export function PatientProfilePage() {
             <Label>Address (optional)</Label>
             <div className="mt-1">
               <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="City / address" />
+            </div>
+          </div>
+          <div>
+            <Label>Emergency contact name (optional)</Label>
+            <div className="mt-1">
+              <Input value={emergencyContactName} onChange={(e) => setEmergencyContactName(e.target.value)} placeholder="Name" />
+            </div>
+          </div>
+          <div>
+            <Label>Emergency contact phone (optional)</Label>
+            <div className="mt-1">
+              <Input value={emergencyContactPhone} onChange={(e) => setEmergencyContactPhone(e.target.value)} placeholder="07x xxxx xxx" />
             </div>
           </div>
         </div>

@@ -28,7 +28,18 @@ public class DoctorController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public DoctorProfile upsertProfile(@RequestHeader("X-User-Id") Long userId,
 	                                 @Valid @RequestBody UpsertDoctorProfileRequest req) {
-		return service.upsertProfile(userId, req.fullName(), req.phone(), req.registrationNo(), req.specialization(), req.documentsUrl());
+		return service.upsertProfile(
+				userId,
+				req.fullName(),
+				req.phone(),
+				req.registrationNo(),
+				req.specialization(),
+				req.documentsUrl(),
+				req.bio(),
+				req.yearsOfExperience(),
+				req.consultationFeeLkr(),
+				req.clinicAddress()
+		);
 	}
 
 	@PostMapping(value = "/me/profile-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

@@ -1,8 +1,12 @@
 package lk.medilink.telemedicine.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lk.medilink.telemedicine.domain.SessionStatus;
 import lk.medilink.telemedicine.domain.TelemedicineSession;
+import lk.medilink.telemedicine.messaging.ConsultationEvents;
+import lk.medilink.telemedicine.messaging.RabbitConfig;
 import lk.medilink.telemedicine.repo.TelemedicineSessionRepository;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
@@ -25,15 +29,18 @@ public class TelemedicineAppService {
 	}
 
 	private final TelemedicineSessionRepository repo;
+	private final RabbitTemplate rabbit;
 	private final RestTemplate rest;
 	private final String jitsiBaseUrl;
 	private final String doctorBaseUrl;
 
 	public TelemedicineAppService(TelemedicineSessionRepository repo,
+	                             RabbitTemplate rabbit,
 	                             RestTemplateBuilder restBuilder,
 	                             @Value("${app.jitsi-base-url:https://meet.jit.si}") String jitsiBaseUrl,
 	                             @Value("${app.doctor-base-url:http://localhost:8084}") String doctorBaseUrl) {
 		this.repo = repo;
+		this.rabbit = rabbit;
 		this.rest = restBuilder.build();
 		this.jitsiBaseUrl = jitsiBaseUrl;
 		this.doctorBaseUrl = doctorBaseUrl;
@@ -55,6 +62,42 @@ public class TelemedicineAppService {
 	@Transactional
 	public void cancelByAppointmentId(Long appointmentId) {
 		repo.findByAppointmentId(appointmentId).ifPresent(TelemedicineSession::cancel);
+	}
+
+	@Transactional
+	public TelemedicineSession completeConsultation(Long appointmentId, Long requesterUserId, String roles) {
+		boolean isDoctor = roles != null && roles.contains("DOCTOR");
+		if (!isDoctor) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed");
+		}
+
+		TelemedicineSession s = repo.findByAppointmentId(appointmentId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Telemedicine session not found"));
+
+		Long doctorId = resolveDoctorIdForUser(requesterUserId);
+		if (!doctorId.equals(s.getDoctorId())) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed");
+		}
+		if (s.getStatus() != SessionStatus.ACTIVE) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Session is not active");
+		}
+
+		boolean changed = s.complete();
+		TelemedicineSession saved = repo.save(s);
+		if (changed) {
+			rabbit.convertAndSend(
+					RabbitConfig.EXCHANGE,
+					"consultation.completed",
+					new ConsultationEvents.ConsultationCompleted(
+							saved.getAppointmentId(),
+							saved.getPatientUserId(),
+							saved.getDoctorId(),
+							saved.getSlotTime(),
+							saved.getCompletedAt()
+					)
+			);
+		}
+		return saved;
 	}
 
 	public TelemedicineSession getSessionForAppointment(Long appointmentId, Long requesterUserId, String roles) {

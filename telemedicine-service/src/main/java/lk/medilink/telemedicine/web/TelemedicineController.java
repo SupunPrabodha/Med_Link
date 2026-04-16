@@ -40,6 +40,22 @@ public class TelemedicineController {
 		);
 	}
 
+	@PostMapping("/sessions/appointment/{appointmentId}/complete")
+	public TelemedicineSessionResponse completeConsultation(
+			@RequestHeader("X-User-Id") Long requesterUserId,
+			@RequestHeader(value = "X-User-Role", required = false) String roles,
+			@PathVariable("appointmentId") Long appointmentId
+	) {
+		TelemedicineSession s = service.completeConsultation(appointmentId, requesterUserId, roles);
+		return new TelemedicineSessionResponse(
+				s.getAppointmentId(),
+				s.getSlotTime(),
+				s.getRoomName(),
+				s.getJoinUrl(),
+				s.getStatus().name()
+		);
+	}
+
 	@GetMapping("/ping")
 	public String ping() {
 		return "telemedicine-service @ " + Instant.now();

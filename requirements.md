@@ -1,396 +1,152 @@
-# MediLink LK – AI-Enabled Telemedicine & Appointment Platform
+# MediLink LK – AI-Enabled Smart Healthcare Platform (Microservices)
 
-## 📌 Project Overview
-
-## ✅ Current Implementation Scope (this repository)
-
-This repository contains a **runnable microservices-based MediLink LK platform** aligned to the distributed-systems requirements (Gateway + Discovery + Auth + RBAC + async events + per-service PostgreSQL + Docker/K8s).
-
-Implemented services (see `Readme.md` for ports and workflow):
-- Service Discovery (Eureka)
-- API Gateway (routing + JWT validation + RBAC)
-- Auth Service (register/login, issues JWT)
-- Patient Service (profile + profile photo upload (Cloudinary) + medical reports upload/list/download/delete)
-- Doctor Service (onboarding + availability + profile photo upload (Cloudinary) + admin verification)
-- Appointment Service (booking + lifecycle events)
-- Telemedicine Service (Jitsi-based sessions)
-- Payment Service (Stripe Checkout + webhook; PayHere flow kept for compatibility)
-- Notification Service (consumes events + in-app notifications; optional real Email/SMS delivery when configured)
-- Prescription Service (issue + list digital prescriptions)
-
-Implemented UI (React + Vite + Tailwind) under `frontend/`:
-- Auth (register/login)
-- Patient profile (profile + profile photo + medical reports)
-- Doctor profile (profile + phone + availability + profile photo)
-- Doctor browsing (shows avatar)
-- Appointments (patient + doctor + admin flows)
-- Payments (checkout initiation + return)
-- Notifications page (in-app)
-- Prescriptions (patient view)
-- Prescriptions (doctor issue + history)
-- Admin pages (users, doctors, patients, payments, appointments)
-- System status page (health checks)
-
-Still not implemented (planned / optional):
-- AI symptom checker
-- Persistent notification storage (current notifications are in-memory)
-
-MediLink LK is a cloud-native, microservices-based healthcare platform designed to facilitate digital medical services including:
-
-- Patient registration and profile management
-- Doctor onboarding and verification
-- Appointment booking and management
-- Telemedicine (video consultations)
-- Digital prescription handling
-- Medical report uploads
-- Payment integration
-- Notification system (Email/SMS)
-- AI-powered symptom checker (optional enhancement)
-
-This system is designed to follow **distributed systems principles**, using **independent microservices**, **API Gateway**, **asynchronous communication**, and **containerized deployment**.
+This document is aligned with the **assignment requirements** you pasted (patients book appointments, telemedicine, reports, prescriptions, payments, notifications, optional AI symptom checker) and describes:
+1) what is already implemented in this repo
+2) what is still missing / needs improvement to maximize marks
 
 ---
 
-## 🎯 Objectives
+## 1) Services implemented in this repository
 
-- Build a **scalable microservices-based healthcare system**
-- Demonstrate **distributed systems architecture**
-- Implement **secure role-based access control**
-- Integrate **real-world external services**
-- Deploy using **Docker and Kubernetes**
-- Achieve **production-level system design quality**
+| Service | Status | Purpose (high level) |
+|---|---|---|
+| `service-discovery` (Eureka) | ✅ Implemented | Service registration/discovery |
+| `api-gateway` | ✅ Implemented | Routing + JWT validation + RBAC enforcement |
+| `auth-service` | ✅ Implemented | Register/login, issues JWT, roles (`PATIENT`/`DOCTOR`/`ADMIN`) |
+| `patient-service` | ✅ Implemented | Patient profile + profile photo + medical report upload/list/download/delete |
+| `doctor-service` | ✅ Implemented | Doctor profile + availability schedules + profile photo + admin verification |
+| `appointment-service` | ✅ Implemented | Booking + modify/cancel + status tracking + publishes events |
+| `payment-service` | ✅ Implemented | Stripe Checkout + webhook (signature verification) and PayHere flow (compatibility) |
+| `telemedicine-service` | ✅ Implemented | Secure session provisioning based on appointment confirmation (Jitsi join URL) |
+| `notification-service` | ✅ Implemented | In-app notifications + optional Email (Brevo) + SMS (Twilio) delivery when configured |
+| `prescription-service` | ✅ Implemented | Digital prescriptions (doctor issues, patient views) |
+| `ai-symptom-checker-service` | ❌ Not implemented | Optional enhancement (AI symptom checker) |
 
----
-
-## 🧠 System Architecture
-
-### Architecture Style
-- Microservices Architecture
-- API Gateway Pattern
-- Event-Driven Communication (RabbitMQ)
-
-### High-Level Components
-
-- Frontend (React)
-- API Gateway
-- Auth Service
-- Patient Service
-- Doctor Service
-- Appointment Service
-- Telemedicine Service
-- Payment Service
-- Notification Service
-- Prescription Service
-- AI Symptom Checker Service (optional)
+Frontend:
+- ✅ Web UI implemented (`frontend/` – React + Vite + Tailwind)
+- ❌ Mobile app not implemented (not required if “web or mobile” is satisfied)
 
 ---
 
-## 🧱 Tech Stack
+## 2) Feature coverage vs assignment requirements
 
-### Frontend
-- React (Vite)
-- Tailwind CSS
-- Axios (API calls)
-- React Router
+Legend:
+- ✅ Implemented
+- 🟡 Partially implemented / needs polish
+- ❌ Not implemented
 
-### Backend (Microservices)
-- Java 17
-- Spring Boot
-- Spring Web
-- Spring Data JPA
-- Spring Security (JWT)
-- Spring Cloud Gateway
-- Eureka (Service Discovery)
-- OpenFeign (inter-service communication)
+### Web/Mobile interface
+- ✅ Web UI for patient/doctor/admin flows
+- 🟡 UX polish and “professional” profile fields still needed
+- ❌ Mobile app (optional if web is acceptable)
 
-### Database
-- PostgreSQL (per service or schema-based separation)
+### Patient Management Service
+Patient role requirements:
+- ✅ Register/login (via `auth-service`)
+- ✅ Manage profile
+- ✅ Upload medical reports/documents
+- 🟡 View “medical history” (reports exist; structured longitudinal history is limited)
+- ✅ View prescriptions (via `prescription-service`)
+- ✅ Attend video consultations (telemedicine join URLs)
 
-### Messaging
-- RabbitMQ (event-driven communication)
+### Doctor Management Service
+Doctor role requirements:
+- ✅ Manage profile
+- ✅ Set availability schedules
+- ✅ Accept/reject appointment requests (doctor approval endpoint)
+- ✅ Conduct telemedicine sessions (Jitsi join URLs)
+- ✅ Issue digital prescriptions
+- ✅ View patient-uploaded reports (doctor endpoint via appointment-service → patient-service internal download)
 
-### External Integrations
-- Video: Jitsi Meet
-- Payments: Stripe (Checkout + webhook) / PayHere (compatibility)
-- Image storage: Cloudinary (profile photos)
-- Email: Brevo (optional; when configured)
-- SMS: Twilio (optional; when configured)
-- AI: OpenAI API (Symptom Checker) (not implemented)
+### Admin role
+- ✅ Manage user accounts (list/search in gateway/admin UI)
+- ✅ Verify doctor registrations (approve/reject)
+- 🟡 Oversee platform operations/transactions (admin can view payments/appointments; improve audit/reporting for “professional” finish)
 
-### DevOps
-- Docker
-- Docker Compose
-- Kubernetes (Minikube or Docker Desktop)
+### Appointment Service
+- ✅ Search doctors by specialty (doctor-service supports `GET /api/doctors?specialization=...`)
+- ✅ Book appointments
+- ✅ Cancel bookings
+- ✅ Modify bookings (reschedule endpoint exists)
+- 🟡 “Track appointment status in real time” (status exists and updates via events; add UI auto-refresh/SSE/WebSocket for real-time feel)
 
----
+### Telemedicine (Video Session Integration)
+- ✅ Jitsi-based sessions (join URL)
+- 🟡 “Consultation completion” workflow (a clear “end session / completed” action + event is not fully implemented)
 
-## 👥 User Roles
+### Payment Service
+- ✅ Stripe (sandbox) checkout + webhook validation
+- ✅ PayHere flow kept for compatibility / marker-friendly smoke tests
 
-### Patient
-- Register/login
-- Manage profile
-- Search doctors
-- Book appointments
-- Upload reports
-- Join consultations
-- View prescriptions
-
-### Doctor
-- Register/login
-- Submit verification details
-- Manage availability
-- Conduct consultations
-- Issue prescriptions
-
-### Admin
-- Verify doctors
-- Manage users
-- Monitor system activity
-
----
-
-## 🔐 Authentication & Security
-
-- JWT-based authentication
-- Role-Based Access Control (RBAC)
-- Password hashing using BCrypt
-- Secure file upload handling
-- Input validation
-- Protected endpoints per role
-- API Gateway authentication filtering
-
----
-
-## 🧩 Microservices Breakdown
-
-### 1. API Gateway
-- Central entry point
-- Request routing
-- Authentication validation
-
-### 2. Auth Service
-- User registration/login
-- JWT generation
-- Role management
-
-### 3. Patient Service
-- Patient profile
-- Medical reports
-- Medical history
-
-### 4. Doctor Service
-- Doctor profile
-- Specializations
-- Availability management
-
-### 5. Appointment Service
-- Booking system
-- Cancel appointments
-- Appointment lifecycle tracking (status + doctor approval)
-
-### 6. Telemedicine Service
-- Video session creation
-- Session management
-- Consultation tracking
-
-### 7. Payment Service
-- Payment processing
-- Transaction validation
-
-### 8. Notification Service
-- Email/SMS notifications (optional; when configured)
-- Event-driven alerts
-
-### 9. Prescription Service
-- Issue digital prescriptions (doctor)
-- View prescriptions (patient)
-
-### 10. AI Symptom Checker Service (Optional)
-- Analyze symptoms
-- Suggest medical specialty
-
----
-
-## 🔄 Communication Patterns
-
-### Synchronous (REST APIs)
-- Gateway → Services
-- Service-to-Service validation
-
-### Asynchronous (RabbitMQ)
-Events:
-- Appointment Created
-- Appointment Cancelled
-- Payment Completed
-- Doctor Verified
-- Consultation Completed
-
-Consumers:
-- Notification Service
-- Patient Service (updates)
-- Logging/Audit
-
----
-
-## 🗄️ Database Strategy
-
-- Each service owns its own data
-- Avoid shared database across services
-- Use PostgreSQL per service/schema
-- Maintain loose coupling
-
----
-
-## 📁 File Storage
-
-- Profile photos stored in Cloudinary (when `APP_CLOUDINARY_URL` is configured)
-- Medical reports are currently stored in PostgreSQL (bytea) and served via download endpoints
-- (Optional future improvement) Move medical reports to object storage (Cloudinary/S3) and store only metadata + secure URLs
-
----
-
-## 💳 Payment Flow
-
-1. Patient books appointment
-2. Payment Service generates payment request
-3. Payment provider callback validates transaction
-4. Appointment is confirmed
-5. Notification triggered
-
----
-
-## 📹 Telemedicine Flow
-
-1. Appointment confirmed
-2. Telemedicine session created
-3. Jitsi room generated
-4. Patient and doctor join via link
-5. Consultation recorded in system
-
----
-
-## 📩 Notification System
-
-- Triggered via RabbitMQ events
-- In-app notifications (notification-service stores and exposes REST endpoints; frontend has a Notifications page)
-- Optional real delivery when configured:
+### Notification Service
+- ✅ Event-driven notifications (RabbitMQ)
+- ✅ In-app notifications page
+- ✅ Optional real delivery when configured:
   - Email via Brevo
   - SMS via Twilio
-- Payment notifications and doctor approval alerts are supported via events
-- (Optional future improvement) Scheduled appointment reminders
+- 🟡 Ensure “booking confirmation” + “consultation completion” notifications are both covered end-to-end (completion event currently needs strengthening)
+
+### AI Symptom Checker (Optional Enhancement)
+- ❌ Not implemented (optional)
 
 ---
 
-## 🤖 AI Symptom Checker
+## 3) What to do to maximize marks (recommended checklist)
 
-- User inputs symptoms
-- AI suggests possible conditions
-- Recommends doctor specialty
+### A) Must-have for full marks (core requirements + marking friendliness)
+1. **Kubernetes deployment that actually runs**
+   - Ensure manifests cover the *full* runnable set (gateway, discovery, all services, RabbitMQ, Postgres, secrets/configmaps, ingress)
+   - Provide a “single command” runbook for K8s (minikube/docker-desktop)
+2. **End-to-end demo workflow that proves requirements**
+   - Keep and extend the existing smoke test to verify all key flows through the gateway
+3. **Appointment modify/reschedule UI + notifications**
+   - Expose reschedule in UI (patient)
+   - Ensure reschedule sends notifications (in-app + optional email/SMS)
+4. **Consultation completion lifecycle**
+   - Add a doctor action to mark a telemedicine session “COMPLETED”
+   - Publish an event and send notifications (“consultation completed”)
 
-⚠️ Disclaimer:
-- Not for diagnosis
-- Only for guidance
+### B) Professionalization (high impact, low risk)
+1. **Richer profile fields** (requested: “make the site more professional”)
+   - Patient examples: gender, blood group, allergies, chronic conditions, emergency contact, NIC/passport
+   - Doctor examples: qualifications, years of experience, languages, clinic/hospital, consultation fee, bio
+2. **Audit trail & admin reporting**
+   - Show payment history, appointment history, doctor verification decisions (timestamps + actor)
+3. **Notification persistence**
+   - Store notifications in Postgres (instead of in-memory) to survive restarts
+
+### C) Optional (extra marks)
+1. Implement **AI symptom checker** as a separate microservice (even basic rules/LLM integration) with clear disclaimer.
 
 ---
 
-## 📦 Deployment Strategy
+## 4) Security notes (for marking + “production-like” quality)
+
+- ✅ JWT authentication + gateway RBAC is implemented.
+- 🟡 For a “production-like” deployment, avoid exposing internal service ports directly (only expose gateway/ingress) to prevent bypassing RBAC.
+- ✅ Internal service-to-service lookups used for notification delivery are protected by a shared internal token.
+
+---
+
+## 5) DevOps / Deployment
 
 ### Docker
-- Each service containerized
-- Docker Compose for local dev
+- ✅ Docker Compose for local run (per-service Postgres + RabbitMQ)
 
 ### Kubernetes
-- Deploy all services
-- Use:
-    - Deployments
-    - Services
-    - ConfigMaps
-    - Secrets
-    - Ingress
+- ✅ `k8s/` folder exists (Deployments, Services, ConfigMaps, Secrets, Ingress)
+- 🟡 Needs verification and alignment with the full service set (including prescriptions/telemedicine/notifications/payment)
 
 ---
 
-## 📊 Key Workflows
+## 6) Testing & documentation
 
-### Appointment Booking
-1. Patient searches doctor
-2. Selects available slot
-3. Books appointment
-4. Completes payment
-5. Notification sent
-
-### Doctor Verification
-1. Doctor registers
-2. Admin reviews details
-3. Approval/rejection
-4. Notification triggered
-
-### Consultation Flow
-1. Appointment confirmed
-2. Video session created
-3. Consultation conducted
-4. Prescription issued
-
----
-
-## 🧪 Testing Strategy
-
-- Unit testing (Spring Boot)
-- API testing (Postman)
-- Integration testing between services
-- Error handling validation
-
----
-
-## 📚 Documentation Requirements
-
-- Architecture Diagram
-- Service Interaction Diagram
-- API Specifications (Swagger)
-- Workflow Diagrams
-- Deployment Architecture (Docker + K8s)
-
----
-
-## 🚀 Future Enhancements
-
-- Mobile app integration
-- Real-time chat
-- Analytics dashboard
-- EHR integration
-- Multi-language support
-
----
-
-## 🏁 Success Criteria
-
-- Fully working microservices system
-- Proper service separation
-- Secure authentication and authorization
-- External service integration
-- Docker + Kubernetes deployment
-- Clean UI and user flows
-- Professional documentation
-
----
-
-## ⚠️ Important Notes for Development
-
-- Do NOT build as a monolith
-- Keep services independent
-- Follow clean architecture principles
-- Avoid tight coupling between services
-- Focus on stability over unnecessary features
-- Ensure all major workflows are fully functional
-
----
-
-## 🧠 Development Philosophy
-
-This project should reflect:
-- Real-world system design
-- Scalable architecture thinking
-- Clean, maintainable code
-- Proper distributed system implementation
+- ✅ OpenAPI/Swagger is available per service and via gateway.
+- 🟡 Improve test coverage around:
+  - appointment lifecycle transitions
+  - payment callbacks/webhook verification
+  - notifications delivery error handling
+  - RBAC access checks
+- ✅ Architecture diagrams exist in `docs/architecture.md`.
 
 ---

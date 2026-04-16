@@ -58,7 +58,16 @@ public class DoctorAppService {
 	}
 
 	@Transactional
-	public DoctorProfile upsertProfile(Long userId, String fullName, String phone, String registrationNo, String specialization, String documentsUrl) {
+	public DoctorProfile upsertProfile(Long userId,
+	                                String fullName,
+	                                String phone,
+	                                String registrationNo,
+	                                String specialization,
+	                                String documentsUrl,
+	                                String bio,
+	                                Integer yearsOfExperience,
+	                                Integer consultationFeeLkr,
+	                                String clinicAddress) {
 		DoctorProfile profile = repo.findByUserId(userId)
 				.orElseGet(() -> new DoctorProfile(userId, fullName, registrationNo, specialization, documentsUrl));
 
@@ -72,6 +81,10 @@ public class DoctorAppService {
 		profile.setRegistrationNo(registrationNo);
 		profile.setSpecialization(specialization);
 		profile.setDocumentsUrl(documentsUrl);
+		profile.setBio(blankToNull(bio));
+		profile.setYearsOfExperience(yearsOfExperience);
+		profile.setConsultationFeeLkr(consultationFeeLkr);
+		profile.setClinicAddress(blankToNull(clinicAddress));
 		if (profile.getStatus() != VerificationStatus.VERIFIED) {
 			profile.setStatus(VerificationStatus.PENDING);
 			profile.setRejectionReason(null);

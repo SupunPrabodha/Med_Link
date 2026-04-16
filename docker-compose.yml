@@ -111,6 +111,38 @@ services:
       timeout: 5s
       retries: 20
 
+  postgres-notification:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: notificationdb
+      POSTGRES_USER: notification
+      POSTGRES_PASSWORD: notification
+    ports:
+      - "5439:5432"
+    volumes:
+      - pg_notification_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notification -d notificationdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  postgres-symptom:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: symptomdb
+      POSTGRES_USER: symptom
+      POSTGRES_PASSWORD: symptom
+    ports:
+      - "5440:5432"
+    volumes:
+      - pg_symptom_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U symptom -d symptomdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -282,6 +314,9 @@ services:
       SERVER_PORT: "8083"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://service-discovery:8761/eureka"
       SPRING_RABBITMQ_HOST: "rabbitmq"
+      SPRING_DATASOURCE_URL: "${NOTIFICATION_DB_URL:-jdbc:postgresql://postgres-notification:5432/notificationdb}"
+      SPRING_DATASOURCE_USERNAME: "${NOTIFICATION_DB_USER:-notification}"
+      SPRING_DATASOURCE_PASSWORD: "${NOTIFICATION_DB_PASS:-notification}"
       APP_INTERNAL_TOKEN: "${INTERNAL_API_TOKEN:-change-me-internal-token}"
       APP_AUTH_BASE_URL: "http://auth-service:8081"
       APP_PATIENT_BASE_URL: "http://patient-service:8086"
@@ -296,6 +331,8 @@ services:
       service-discovery:
         condition: service_started
       rabbitmq:
+        condition: service_healthy
+      postgres-notification:
         condition: service_healthy
 
   prescription-service:
@@ -345,6 +382,27 @@ services:
       postgres-telemedicine:
         condition: service_healthy
 
+  symptom-checker-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: symptom-checker-service
+    image: medilink/symptom-checker-service:0.1.0
+    ports:
+      - "8089:8089"
+    environment:
+      SERVER_PORT: "8089"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://service-discovery:8761/eureka"
+      SPRING_DATASOURCE_URL: "${SYMPTOM_DB_URL:-jdbc:postgresql://postgres-symptom:5432/symptomdb}"
+      SPRING_DATASOURCE_USERNAME: "${SYMPTOM_DB_USER:-symptom}"
+      SPRING_DATASOURCE_PASSWORD: "${SYMPTOM_DB_PASS:-symptom}"
+    depends_on:
+      service-discovery:
+        condition: service_started
+      postgres-symptom:
+        condition: service_healthy
+
   api-gateway:
     build:
       context: .
@@ -373,6 +431,8 @@ services:
         condition: service_started
       prescription-service:
         condition: service_started
+      symptom-checker-service:
+        condition: service_started
       patient-service:
         condition: service_started
       telemedicine-service:
@@ -399,4 +459,6 @@ volumes:
   pg_patient_data:
   pg_telemedicine_data:
   pg_prescription_data:
+  pg_notification_data:
+  pg_symptom_data:
   rabbitmq_data:

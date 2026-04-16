@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lk.medilink.appointment.domain.Appointment;
 import lk.medilink.appointment.service.AppointmentAppService;
 import lk.medilink.appointment.web.dto.CreateAppointmentRequest;
+import lk.medilink.appointment.web.dto.RescheduleAppointmentRequest;
 import lk.medilink.appointment.web.dto.UpdateAppointmentApprovalRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
@@ -79,6 +80,15 @@ public class AppointmentController {
 	                        @PathVariable("id") Long id) {
 		boolean admin = roles != null && roles.contains("ADMIN");
 		return service.cancel(id, patientId, admin);
+	}
+
+	@PutMapping("/{id}/reschedule")
+	public Appointment reschedule(@RequestHeader("X-User-Id") Long requesterUserId,
+	                             @RequestHeader(value = "X-User-Role", required = false) String roles,
+	                             @PathVariable("id") Long id,
+	                             @Valid @RequestBody RescheduleAppointmentRequest req) {
+		boolean admin = roles != null && roles.contains("ADMIN");
+		return service.reschedule(id, requesterUserId, admin, req.slotTime());
 	}
 
 	@GetMapping("/ping")

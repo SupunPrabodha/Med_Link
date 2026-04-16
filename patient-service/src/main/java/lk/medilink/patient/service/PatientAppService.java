@@ -48,10 +48,35 @@ public class PatientAppService {
 	}
 
 	@Transactional
-	public PatientProfile upsertProfile(Long userId, String fullName, String phone, LocalDate dateOfBirth, String address) {
+	public PatientProfile upsertProfile(Long userId,
+	                                  String fullName,
+	                                  String phone,
+	                                  LocalDate dateOfBirth,
+	                                  String address,
+	                                  String gender,
+	                                  String emergencyContactName,
+	                                  String emergencyContactPhone) {
 		String normalizedPhone = normalizeToE164(phone);
 		if (normalizedPhone == null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Phone number is invalid; use +[country][number] (E.164) or a local 0XXXXXXXXX format");
+		}
+
+		String genderNorm = blankToNull(gender);
+		if (genderNorm != null) {
+			genderNorm = genderNorm.trim().toUpperCase();
+			if (!genderNorm.equals("MALE") && !genderNorm.equals("FEMALE") && !genderNorm.equals("OTHER")) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "gender must be one of MALE, FEMALE, OTHER");
+			}
+		}
+
+		String emergencyNameNorm = blankToNull(emergencyContactName);
+		String emergencyPhoneRaw = blankToNull(emergencyContactPhone);
+		String emergencyPhoneNorm = null;
+		if (emergencyPhoneRaw != null) {
+			emergencyPhoneNorm = normalizeToE164(emergencyPhoneRaw);
+			if (emergencyPhoneNorm == null) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Emergency contact phone number is invalid; use +[country][number] (E.164) or a local 0XXXXXXXXX format");
+			}
 		}
 
 		PatientProfile p = profiles.findByUserId(userId)
@@ -60,6 +85,9 @@ public class PatientAppService {
 		p.setPhone(normalizedPhone);
 		p.setDateOfBirth(dateOfBirth);
 		p.setAddress(address);
+		p.setGender(genderNorm);
+		p.setEmergencyContactName(emergencyNameNorm);
+		p.setEmergencyContactPhone(emergencyPhoneNorm);
 		return profiles.save(p);
 	}
 

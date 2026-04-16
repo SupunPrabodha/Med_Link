@@ -137,6 +137,22 @@ spring:
             - name: JwtAuthGatewayFilter
               args:
                 requiredRoles: ["ADMIN"]
+        - id: symptom-checker-service
+          uri: lb://symptom-checker-service
+          predicates:
+            - Path=/api/symptoms,/api/symptoms/**
+          filters:
+            - name: JwtAuthGatewayFilter
+              args:
+                requiredRoles: ["PATIENT","ADMIN"]
+        - id: symptom-checker-admin
+          uri: lb://symptom-checker-service
+          predicates:
+            - Path=/api/admin/symptoms,/api/admin/symptoms/**
+          filters:
+            - name: JwtAuthGatewayFilter
+              args:
+                requiredRoles: ["ADMIN"]
         - id: payment-admin
           uri: lb://payment-service
           predicates:

@@ -29,6 +29,18 @@ public class DoctorProfile {
 	@Column(nullable = true)
 	private String documentsUrl;
 
+	@Column(nullable = true, length = 1000)
+	private String bio;
+
+	@Column(nullable = true)
+	private Integer yearsOfExperience;
+
+	@Column(nullable = true)
+	private Integer consultationFeeLkr;
+
+	@Column(nullable = true, length = 500)
+	private String clinicAddress;
+
 	@Column(nullable = true)
 	private String profilePhotoUrl;
 
@@ -105,6 +117,42 @@ public class DoctorProfile {
 
 	public void setDocumentsUrl(String documentsUrl) {
 		this.documentsUrl = documentsUrl;
+		this.updatedAt = Instant.now();
+	}
+
+	public String getBio() {
+		return bio;
+	}
+
+	public void setBio(String bio) {
+		this.bio = bio;
+		this.updatedAt = Instant.now();
+	}
+
+	public Integer getYearsOfExperience() {
+		return yearsOfExperience;
+	}
+
+	public void setYearsOfExperience(Integer yearsOfExperience) {
+		this.yearsOfExperience = yearsOfExperience;
+		this.updatedAt = Instant.now();
+	}
+
+	public Integer getConsultationFeeLkr() {
+		return consultationFeeLkr;
+	}
+
+	public void setConsultationFeeLkr(Integer consultationFeeLkr) {
+		this.consultationFeeLkr = consultationFeeLkr;
+		this.updatedAt = Instant.now();
+	}
+
+	public String getClinicAddress() {
+		return clinicAddress;
+	}
+
+	public void setClinicAddress(String clinicAddress) {
+		this.clinicAddress = clinicAddress;
 		this.updatedAt = Instant.now();
 	}
 

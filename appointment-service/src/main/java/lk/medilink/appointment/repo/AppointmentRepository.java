@@ -18,6 +18,8 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
 	boolean existsByDoctorIdAndSlotTimeAndStatusNot(Long doctorId, Instant slotTime, AppointmentStatus status);
 
+	boolean existsByDoctorIdAndSlotTimeAndStatusNotAndIdNot(Long doctorId, Instant slotTime, AppointmentStatus status, Long id);
+
 	List<Appointment> findByDoctorIdAndSlotTimeBetween(Long doctorId, Instant from, Instant to);
 }
 

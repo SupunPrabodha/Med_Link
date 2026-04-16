@@ -14,4 +14,12 @@ public final class AppointmentEvents {
 
 	public record AppointmentConfirmed(Long appointmentId, Long patientId, Long doctorId, Instant slotTime, Instant confirmedAt) {
 	}
+
+	public record AppointmentRescheduled(Long appointmentId,
+	                                   Long patientId,
+	                                   Long doctorId,
+	                                   Instant oldSlotTime,
+	                                   Instant newSlotTime,
+	                                   Instant rescheduledAt) {
+	}
 }

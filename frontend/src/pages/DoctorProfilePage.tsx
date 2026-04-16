@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Alert, Badge, Button, Card, Input, Label, Select } from '../ui/primitives'
+import { Alert, Badge, Button, Card, Input, Label, Select, Textarea } from '../ui/primitives'
 
 type DoctorProfile = {
   id: number
@@ -11,6 +11,10 @@ type DoctorProfile = {
   registrationNo: string
   specialization: string
   documentsUrl?: string | null
+  bio?: string | null
+  yearsOfExperience?: number | null
+  consultationFeeLkr?: number | null
+  clinicAddress?: string | null
   profilePhotoUrl?: string | null
   status: 'PENDING' | 'VERIFIED' | 'REJECTED'
   updatedAt: string
@@ -56,6 +60,10 @@ export function DoctorProfilePage() {
   const [registrationNo, setRegistrationNo] = useState('')
   const [specialization, setSpecialization] = useState('')
   const [documentsUrl, setDocumentsUrl] = useState('')
+  const [bio, setBio] = useState('')
+  const [yearsOfExperience, setYearsOfExperience] = useState('')
+  const [consultationFeeLkr, setConsultationFeeLkr] = useState('')
+  const [clinicAddress, setClinicAddress] = useState('')
 
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoUploading, setPhotoUploading] = useState(false)
@@ -83,6 +91,10 @@ export function DoctorProfilePage() {
       setRegistrationNo(res.data.registrationNo)
       setSpecialization(res.data.specialization)
       setDocumentsUrl(res.data.documentsUrl ?? '')
+      setBio(res.data.bio ?? '')
+      setYearsOfExperience(res.data.yearsOfExperience == null ? '' : String(res.data.yearsOfExperience))
+      setConsultationFeeLkr(res.data.consultationFeeLkr == null ? '' : String(res.data.consultationFeeLkr))
+      setClinicAddress(res.data.clinicAddress ?? '')
     } catch (err: any) {
       setProfile(null)
       // if not created yet, server likely returns 404
@@ -218,12 +230,28 @@ export function DoctorProfilePage() {
     setError(null)
     setSuccess(null)
     try {
+      const years = yearsOfExperience.trim() ? Number.parseInt(yearsOfExperience.trim(), 10) : null
+      if (years != null && (!Number.isFinite(years) || years < 0)) {
+        setError('Years of experience must be a non-negative number')
+        return
+      }
+
+      const fee = consultationFeeLkr.trim() ? Number.parseInt(consultationFeeLkr.trim(), 10) : null
+      if (fee != null && (!Number.isFinite(fee) || fee < 0)) {
+        setError('Consultation fee must be a non-negative number')
+        return
+      }
+
       const res = await api.post<DoctorProfile>('/doctors/me/profile', {
         fullName: fullName.trim(),
         phone: phone.trim() ? phone.trim() : null,
         registrationNo: registrationNo.trim(),
         specialization: specialization.trim(),
         documentsUrl: documentsUrl.trim() ? documentsUrl.trim() : null,
+        bio: bio.trim() ? bio.trim() : null,
+        yearsOfExperience: years,
+        consultationFeeLkr: fee,
+        clinicAddress: clinicAddress.trim() ? clinicAddress.trim() : null,
       })
       setProfile(res.data)
       setSuccess('Saved. Status is now ' + res.data.status)
@@ -319,6 +347,30 @@ export function DoctorProfilePage() {
             <Label>Documents URL (optional)</Label>
             <div className="mt-1">
               <Input value={documentsUrl} onChange={(e) => setDocumentsUrl(e.target.value)} placeholder="https://..." />
+            </div>
+          </div>
+          <div>
+            <Label>Years of experience (optional)</Label>
+            <div className="mt-1">
+              <Input type="number" min={0} value={yearsOfExperience} onChange={(e) => setYearsOfExperience(e.target.value)} placeholder="e.g., 5" />
+            </div>
+          </div>
+          <div>
+            <Label>Consultation fee (LKR) (optional)</Label>
+            <div className="mt-1">
+              <Input type="number" min={0} value={consultationFeeLkr} onChange={(e) => setConsultationFeeLkr(e.target.value)} placeholder="e.g., 2500" />
+            </div>
+          </div>
+          <div className="md:col-span-2">
+            <Label>Clinic address (optional)</Label>
+            <div className="mt-1">
+              <Input value={clinicAddress} onChange={(e) => setClinicAddress(e.target.value)} placeholder="City / clinic address" />
+            </div>
+          </div>
+          <div className="md:col-span-2">
+            <Label>Bio (optional)</Label>
+            <div className="mt-1">
+              <Textarea rows={4} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Short professional summary" />
             </div>
           </div>
         </div>

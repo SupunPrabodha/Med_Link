@@ -19,6 +19,15 @@ public record UpsertPatientProfileRequest(
 		LocalDate dateOfBirth,
 
 		@Size(max = 500, message = "Address is too long")
-		String address
+		String address,
+
+		@Size(max = 20, message = "Gender is too long")
+		String gender,
+
+		@Size(max = 200, message = "Emergency contact name is too long")
+		String emergencyContactName,
+
+		@Size(max = 50, message = "Emergency contact phone is too long")
+		String emergencyContactPhone
 ) {
 }
