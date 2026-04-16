@@ -1,30 +1,40 @@
 package lk.medilink.telemedicine.messaging;
 
 import lk.medilink.telemedicine.service.ConsultationSessionService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.util.Map;
 
 @Component
 public class AppointmentConfirmedEventHandler {
 	private static final Logger log = LoggerFactory.getLogger(AppointmentConfirmedEventHandler.class);
 
 	private final ConsultationSessionService sessions;
+	private final ObjectMapper objectMapper;
 
-	public AppointmentConfirmedEventHandler(ConsultationSessionService sessions) {
+	public AppointmentConfirmedEventHandler(ConsultationSessionService sessions, ObjectMapper objectMapper) {
 		this.sessions = sessions;
+		this.objectMapper = objectMapper;
 	}
 
 	@RabbitListener(queues = RabbitConfig.APPOINTMENT_CONFIRMED_QUEUE)
-	public void onAppointmentConfirmed(Map<String, Object> event) {
-		Long appointmentId = toLong(event.get("appointmentId"));
-		Long patientId = toLong(event.get("patientId"));
-		Long doctorId = toLong(event.get("doctorId"));
-		Instant slotTime = toInstant(event.get("slotTime"));
+	public void onAppointmentConfirmed(byte[] payload) {
+		AppointmentConfirmedEvent event;
+		try {
+			event = objectMapper.readValue(payload, AppointmentConfirmedEvent.class);
+		} catch (Exception ex) {
+			log.warn("appointment.confirmed payload invalid or unreadable", ex);
+			return;
+		}
+
+		Long appointmentId = event.appointmentId();
+		Long patientId = event.patientId();
+		Long doctorId = event.doctorId();
+		Instant slotTime = event.slotTime();
 
 		if (appointmentId == null || patientId == null || doctorId == null || slotTime == null) {
 			log.warn("appointment.confirmed payload invalid: {}", event);
@@ -34,25 +44,6 @@ public class AppointmentConfirmedEventHandler {
 		sessions.autoCreateFromConfirmedAppointment(appointmentId, doctorId, patientId, slotTime);
 	}
 
-	private Long toLong(Object value) {
-		if (value == null) {
-			return null;
-		}
-		try {
-			return Long.valueOf(value.toString());
-		} catch (NumberFormatException ex) {
-			return null;
-		}
-	}
-
-	private Instant toInstant(Object value) {
-		if (value == null) {
-			return null;
-		}
-		try {
-			return Instant.parse(value.toString());
-		} catch (Exception ex) {
-			return null;
-		}
+	public record AppointmentConfirmedEvent(Long appointmentId, Long patientId, Long doctorId, Instant slotTime, Instant confirmedAt) {
 	}
 }

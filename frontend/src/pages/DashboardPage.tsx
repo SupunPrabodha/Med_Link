@@ -61,6 +61,14 @@ export function DashboardPage() {
               </Link>
             )}
 
+            {(hasRole(user, 'PATIENT') || hasRole(user, 'DOCTOR')) && (
+              <Link to="/app/telemedicine">
+                <Button variant="secondary" className="w-full">
+                  Join consultation
+                </Button>
+              </Link>
+            )}
+
             {(hasRole(user, 'PATIENT') || hasRole(user, 'ADMIN')) && (
               <Link to="/app/payments">
                 <Button variant="secondary" className="w-full">

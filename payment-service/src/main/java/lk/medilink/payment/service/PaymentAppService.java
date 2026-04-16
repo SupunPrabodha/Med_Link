@@ -84,6 +84,30 @@ public class PaymentAppService {
 	}
 
 	@Transactional
+	public void simulateCompletedForTesting(Long patientId, String orderId) {
+		if (patientId == null || patientId <= 0) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid patientId");
+		}
+		if (orderId == null || orderId.isBlank()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "orderId is required");
+		}
+
+		Payment p = repo.findByOrderId(orderId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found"));
+		if (!p.getPatientId().equals(patientId)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed");
+		}
+		if (p.getStatus() == PaymentStatus.COMPLETED) {
+			return;
+		}
+		if (p.getStatus() == PaymentStatus.FAILED) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Payment already failed");
+		}
+
+		markCompleted(orderId, "test-simulated", Instant.now());
+	}
+
+	@Transactional
 	public void markFailed(String orderId, String providerRef, Instant failedAt) {
 		Payment p = repo.findByOrderId(orderId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found"));

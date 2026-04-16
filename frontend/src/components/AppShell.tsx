@@ -13,6 +13,7 @@ const items: NavItem[] = [
 	{ label: 'My Profile', to: '/app/patient/profile', show: (roles) => roles.includes('PATIENT') || roles.includes('ADMIN') },
 	{ label: 'Doctors', to: '/app/doctors' },
 	{ label: 'Appointments', to: '/app/appointments', show: (roles) => roles.includes('PATIENT') || roles.includes('ADMIN') },
+	{ label: 'Telemedicine', to: '/app/telemedicine', show: (roles) => roles.includes('PATIENT') || roles.includes('DOCTOR') },
 	{ label: 'Payments', to: '/app/payments', show: (roles) => roles.includes('PATIENT') || roles.includes('ADMIN') },
 	{ label: 'Doctor Profile', to: '/app/doctor/profile', show: (roles) => roles.includes('DOCTOR') },
 	{ label: 'Appointments', to: '/app/doctor/appointments', show: (roles) => roles.includes('DOCTOR') },

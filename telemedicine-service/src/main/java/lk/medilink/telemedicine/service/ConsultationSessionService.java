@@ -142,9 +142,14 @@ public class ConsultationSessionService {
 		String role = session.getDoctorUserId().equals(userId) ? "DOCTOR" : "PATIENT";
 		String displayName = role + "-" + userId;
 		Instant expiresAt = now.plus(joinTokenTtl);
-		String joinToken = buildJoinToken(session, userId, role, displayName, now, expiresAt);
+		String joinToken = shouldAttachJwt() ? buildJoinToken(session, userId, role, displayName, now, expiresAt) : null;
 
-		auditService.recordUserAction(session.getId(), userId, ConsultationAuditAction.JOIN_TOKEN_ISSUED, "Join token issued for role=" + role);
+		auditService.recordUserAction(
+				session.getId(),
+				userId,
+				ConsultationAuditAction.JOIN_TOKEN_ISSUED,
+				shouldAttachJwt() ? "Join token issued for role=" + role : "Join access granted without JWT for public Jitsi domain"
+		);
 
 		return new ConsultationJoinResponse(
 				session.getId(),
@@ -228,5 +233,10 @@ public class ConsultationSessionService {
 	private String buildMeetingUrl(String roomId) {
 		String domain = jitsiDomain.contains("://") ? jitsiDomain : "https://" + jitsiDomain;
 		return domain.endsWith("/") ? domain + roomId : domain + "/" + roomId;
+	}
+
+	private boolean shouldAttachJwt() {
+		String d = jitsiDomain == null ? "" : jitsiDomain.trim().toLowerCase();
+		return !(d.equals("meet.jit.si") || d.equals("https://meet.jit.si") || d.equals("http://meet.jit.si"));
 	}
 }

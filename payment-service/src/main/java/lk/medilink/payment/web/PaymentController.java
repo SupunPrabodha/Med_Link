@@ -25,6 +25,13 @@ public class PaymentController {
 		return service.createPayHereIntent(patientId, req.appointmentId(), req.amount(), req.resolvedCurrency());
 	}
 
+	@PostMapping("/debug/complete/{orderId}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void simulateCompleted(@RequestHeader("X-User-Id") Long patientId,
+	                             @PathVariable("orderId") String orderId) {
+		service.simulateCompletedForTesting(patientId, orderId);
+	}
+
 	@GetMapping("/ping")
 	public String ping() {
 		return "payment-service @ " + Instant.now();

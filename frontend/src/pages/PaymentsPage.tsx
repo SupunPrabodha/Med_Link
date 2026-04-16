@@ -24,6 +24,7 @@ export function PaymentsPage() {
   const [currency, setCurrency] = useState('LKR')
   const [intent, setIntent] = useState<PaymentIntentResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   async function loadAppointments() {
@@ -43,11 +44,13 @@ export function PaymentsPage() {
     setAppointmentId(String(id))
     setIntent(null)
     setError(null)
+    setSuccess(null)
   }
 
   async function createIntent() {
     setLoading(true)
     setError(null)
+    setSuccess(null)
     setIntent(null)
     try {
       const parsedAppointmentId = Number.parseInt(appointmentId, 10)
@@ -77,6 +80,25 @@ export function PaymentsPage() {
       setIntent(res.data)
     } catch (err: any) {
       setError(formatApiError(err, 'Failed to create payment intent'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function simulateSuccess() {
+    if (!intent) return
+
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      const orderId = intent.formFields.order_id
+      await api.post(`/payments/debug/complete/${encodeURIComponent(orderId)}`)
+      setSuccess('Payment marked as completed for testing. The appointment should now confirm and create a telemedicine session.')
+      setIntent(null)
+      await loadAppointments()
+    } catch (err: any) {
+      setError(formatApiError(err, 'Failed to simulate payment success'))
     } finally {
       setLoading(false)
     }
@@ -197,6 +219,11 @@ export function PaymentsPage() {
             <Alert tone="error">{error}</Alert>
           </div>
         )}
+        {success && (
+          <div className="mt-4">
+            <Alert tone="success">{success}</Alert>
+          </div>
+        )}
       </Card>
 
       {intent && (
@@ -225,6 +252,9 @@ export function PaymentsPage() {
               <input key={k} type="hidden" name={k} value={v} />
             ))}
             <Button type="submit">Pay now</Button>
+            <Button variant="secondary" type="button" onClick={simulateSuccess} disabled={loading}>
+              {loading ? 'Simulating…' : 'Simulate success (test only)'}
+            </Button>
             <Button variant="secondary" type="button" onClick={() => setIntent(null)}>
               Close
             </Button>
