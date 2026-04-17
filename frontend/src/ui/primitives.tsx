@@ -9,12 +9,12 @@ export function Button(
 ) {
   const { className, variant = 'primary', ...rest } = props
   const base =
-    'inline-flex h-10 select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+    'inline-flex h-10 select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
   const styles =
     variant === 'primary'
-      ? 'bg-slate-900 text-white hover:bg-slate-800 active:bg-slate-900'
+      ? 'bg-teal-700 text-white hover:bg-teal-600 active:bg-teal-700'
       : variant === 'secondary'
-        ? 'border border-slate-200 bg-white text-slate-900 hover:bg-slate-50 active:bg-white'
+        ? 'border border-slate-300 bg-white text-slate-900 hover:border-teal-200 hover:bg-teal-50/40 active:bg-white'
         : variant === 'danger'
           ? 'border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 active:bg-rose-50'
         : 'bg-transparent text-slate-700 hover:bg-slate-100 active:bg-slate-100'
@@ -71,7 +71,7 @@ export function Label(props: React.LabelHTMLAttributes<HTMLLabelElement>) {
 
 export function Card(props: React.HTMLAttributes<HTMLDivElement>) {
   const { className, ...rest } = props
-  return <div className={cn('rounded-xl border border-slate-200 bg-white p-5 sm:p-6', className)} {...rest} />
+  return <div className={cn('hospital-panel rounded-xl p-5 sm:p-6', className)} {...rest} />
 }
 
 export function Badge(props: React.HTMLAttributes<HTMLSpanElement>) {
@@ -79,7 +79,7 @@ export function Badge(props: React.HTMLAttributes<HTMLSpanElement>) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700',
+        'inline-flex items-center rounded-full border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700',
         className,
       )}
       {...rest}

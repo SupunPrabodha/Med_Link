@@ -65,7 +65,7 @@ export function DoctorBookedAppointmentsCard() {
         <Card>
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <div className="text-sm font-semibold text-slate-900">Booked patients</div>
+                    <div className="text-sm font-semibold tracking-wide text-slate-900">Booked patients</div>
                     <div className="text-xs text-slate-500">Pending approvals only. Approved/declined items are removed from this list.</div>
                 </div>
                 <Button variant="secondary" onClick={loadDoctorAppointments} disabled={doctorAppointmentsLoading}>
@@ -79,7 +79,7 @@ export function DoctorBookedAppointmentsCard() {
 
             <div className="mt-4 overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                    <thead className="bg-slate-50 text-xs text-slate-600">
+                    <thead className="hospital-table-head">
                         <tr>
                             <th className="px-3 py-2 font-semibold">Appointment ID</th>
                             <th className="px-3 py-2 font-semibold">Patient ID</th>
@@ -90,7 +90,7 @@ export function DoctorBookedAppointmentsCard() {
                     </thead>
                     <tbody className="divide-y divide-slate-200">
                         {pendingAppointments.map((a) => (
-                            <tr key={a.id} className="hover:bg-slate-50">
+                            <tr key={a.id} className="hospital-table-row">
                                 <td className="px-3 py-3 font-mono text-xs text-slate-700">{a.id}</td>
                                 <td className="px-3 py-3 font-mono text-xs text-slate-700">{a.patientId}</td>
                                 <td className="px-3 py-3 font-mono text-xs text-slate-700">{new Date(a.slotTime).toLocaleString()}</td>
@@ -101,6 +101,7 @@ export function DoctorBookedAppointmentsCard() {
                                     <div className="flex flex-wrap gap-2">
                                         <Button
                                             variant="secondary"
+                                            className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
                                             onClick={() => updateApproval(a.id, 'APPROVED')}
                                             disabled={doctorAppointmentsLoading || updatingAppointmentId === a.id}
                                         >
@@ -108,6 +109,7 @@ export function DoctorBookedAppointmentsCard() {
                                         </Button>
                                         <Button
                                             variant="secondary"
+                                            className="border-rose-200 text-rose-700 hover:bg-rose-50"
                                             onClick={() => updateApproval(a.id, 'DECLINED')}
                                             disabled={doctorAppointmentsLoading || updatingAppointmentId === a.id}
                                         >
