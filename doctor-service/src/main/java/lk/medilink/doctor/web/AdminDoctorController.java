@@ -22,13 +22,21 @@ public class AdminDoctorController {
 		return service.pending();
 	}
 
+	@GetMapping("/recent-decisions")
+	public List<DoctorProfile> recentDecisions() {
+		return service.recentDecisions();
+	}
+
 	@PostMapping("/{doctorId}/approve")
-	public DoctorProfile approve(@PathVariable("doctorId") Long doctorId) {
-		return service.approve(doctorId);
+	public DoctorProfile approve(@RequestHeader("X-User-Id") Long adminUserId,
+	                            @PathVariable("doctorId") Long doctorId) {
+		return service.approve(doctorId, adminUserId);
 	}
 
 	@PostMapping("/{doctorId}/reject")
-	public DoctorProfile reject(@PathVariable("doctorId") Long doctorId, @Valid @RequestBody RejectDoctorRequest req) {
-		return service.reject(doctorId, req.reason());
+	public DoctorProfile reject(@RequestHeader("X-User-Id") Long adminUserId,
+	                           @PathVariable("doctorId") Long doctorId,
+	                           @Valid @RequestBody RejectDoctorRequest req) {
+		return service.reject(doctorId, adminUserId, req.reason());
 	}
 }

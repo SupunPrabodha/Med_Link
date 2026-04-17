@@ -5,13 +5,16 @@
 - **API Gateway (Spring Cloud Gateway)**: single entry point, routing + JWT validation
 - **Service Discovery (Eureka)**: dynamic service registry
 - **Auth Service**: user registration/login, issues JWT
-- **Patient Service (scaffold)**: placeholder service module + DB integration
+- **Patient Service**: patient profile + medical reports
 - **Doctor Service**: onboarding + admin verification
 - **Appointment Service**: appointment CRUD, publishes events
 - **Payment Service**: payment intents + callback validation, publishes events
-- **Notification Service**: consumes appointment events, emits notifications (mocked as logs)
+- **Telemedicine Service**: provisions video session join URL per confirmed appointment, supports consultation completion
+- **Prescription Service**: doctor issues prescriptions, patient views
+- **Notification Service**: consumes events and persists in-app notifications (optional email/SMS when configured)
+- **Symptom Checker Service (optional enhancement)**: symptom triage + recommended specialties (+ optional FastAPI inference)
 - **RabbitMQ**: asynchronous event-driven communication
-- **PostgreSQL**: per-service data ownership (Auth/Patient/Doctor/Appointment/Payment DBs)
+- **PostgreSQL**: per-service data ownership (Auth/Patient/Doctor/Appointment/Payment/Telemedicine/Prescription/Notification/Symptom DBs)
 
 ## Diagrams (Mermaid)
 

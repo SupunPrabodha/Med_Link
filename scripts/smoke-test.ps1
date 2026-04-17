@@ -44,7 +44,11 @@ Write-Host "[1/7] Starting infrastructure (docker compose)..."
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 Set-Location $repoRoot
 
-$doBuild = ($env:SMOKE_BUILD -eq "1")
+$doBuild = $true
+if ($env:SMOKE_BUILD) {
+  # Backwards compatible: set SMOKE_BUILD=0 to skip builds, SMOKE_BUILD=1 to force builds
+  $doBuild = ($env:SMOKE_BUILD -ne "0")
+}
 $composeArgs = @("up", "-d")
 if ($doBuild) { $composeArgs += "--build" }
 
@@ -273,6 +277,23 @@ $doctorId = $target.id
 $approved = Invoke-RestMethod -Method Post -Uri "$gateway/api/admin/doctors/$doctorId/approve" -Headers $adminHeaders
 Write-Host "Approved doctor id=$doctorId status=$($approved.status)"
 
+# Best-effort: verify admin audit fields are present for verification
+if (-not $approved.verifiedAt) {
+  throw "Expected doctor profile to include verifiedAt after approval"
+}
+if (-not $approved.verifiedByAdminUserId) {
+  throw "Expected doctor profile to include verifiedByAdminUserId after approval"
+}
+
+$recent = Invoke-RestMethod -Method Get -Uri "$gateway/api/admin/doctors/recent-decisions" -Headers $adminHeaders
+$recentMatch = @($recent) | Where-Object { $_.id -eq $doctorId } | Select-Object -First 1
+if (-not $recentMatch) {
+  throw "Expected approved doctor id=$doctorId to appear in /api/admin/doctors/recent-decisions"
+}
+if (-not $recentMatch.verifiedAt) {
+  throw "Expected recent-decisions entry to include verifiedAt for doctor id=$doctorId"
+}
+
 # Verify approved doctor is visible in public doctors list
 $doctors = Invoke-RestMethod -Method Get -Uri "$gateway/api/doctors" -Headers $patientHeaders
 $inList = $doctors | Where-Object { $_.id -eq $doctorId } | Select-Object -First 1
@@ -482,7 +503,53 @@ if (-not $doctorSession -or -not $doctorSession.joinUrl) {
 
 Write-Host "Telemedicine (doctor) joinUrl=$($doctorSession.joinUrl) status=$($doctorSession.status)"
 
-Write-Host "[6/7] Verifying admin management endpoints (users + appointments)..."
+Write-Host "[6/7] Completing consultation (doctor) and verifying notifications..."
+
+$completeResp = Invoke-RestMethod -Method Post -Uri "$gateway/api/telemedicine/sessions/appointment/$($appt.id)/complete" -Headers $doctorHeaders
+Write-Host "Telemedicine complete response: appointmentId=$($completeResp.appointmentId) status=$($completeResp.status)"
+
+$completeDeadline = (Get-Date).AddSeconds(60)
+$completedSession = $null
+while ((Get-Date) -lt $completeDeadline) {
+  $completedSession = Invoke-RestMethod -Method Get -Uri "$gateway/api/telemedicine/sessions/appointment/$($appt.id)" -Headers $doctorHeaders
+  if ($completedSession -and $completedSession.status -eq "COMPLETED") { break }
+  Start-Sleep -Seconds 2
+}
+
+if (-not $completedSession) {
+  throw "Telemedicine session not found after completion (appointment id=$($appt.id))"
+}
+if ($completedSession.status -ne "COMPLETED") {
+  throw "Expected telemedicine session status COMPLETED after completion; got '$($completedSession.status)'"
+}
+
+# Verify consultation.completed notifications (patient + doctor)
+$notifDeadline = (Get-Date).AddSeconds(60)
+$patientCompleteNotif = $null
+$doctorCompleteNotif = $null
+
+while ((Get-Date) -lt $notifDeadline) {
+  $pNotifs = Invoke-RestMethod -Method Get -Uri "$gateway/api/notifications?limit=50" -Headers $patientHeaders
+  $dNotifs = Invoke-RestMethod -Method Get -Uri "$gateway/api/notifications?limit=50" -Headers $doctorHeaders
+
+  $patientCompleteNotif = @($pNotifs) | Where-Object { $_.type -eq "consultation.completed" -and $_.message -like "*appointment #$($appt.id)*" } | Select-Object -First 1
+  $doctorCompleteNotif = @($dNotifs) | Where-Object { $_.type -eq "consultation.completed" -and $_.message -like "*appointment #$($appt.id)*" } | Select-Object -First 1
+
+  if ($patientCompleteNotif -and $doctorCompleteNotif) { break }
+  Start-Sleep -Seconds 2
+}
+
+if (-not $patientCompleteNotif) {
+  throw "Did not observe patient 'consultation.completed' notification for appointment id=$($appt.id)"
+}
+if (-not $doctorCompleteNotif) {
+  throw "Did not observe doctor 'consultation.completed' notification for appointment id=$($appt.id)"
+}
+
+Write-Host "Patient consultation.completed notification id=$($patientCompleteNotif.id)"
+Write-Host "Doctor consultation.completed notification id=$($doctorCompleteNotif.id)"
+
+Write-Host "[7/7] Verifying admin oversight endpoints (users, appointments, payments review)..."
 
 # Admin: users list/search
 $adminUsers = Invoke-RestMethod -Method Get -Uri "$gateway/api/admin/users?q=$suffix" -Headers $adminHeaders
@@ -504,7 +571,17 @@ foreach ($e in $expected) {
   }
 }
 
-# Admin: appointments list + cancel
+$adminUser = $adminUsersArr | Where-Object { $_.email -eq $adminEmail } | Select-Object -First 1
+if (-not $adminUser) {
+  throw "Admin user record not found in /api/admin/users for email='$adminEmail'"
+}
+
+# Cross-check: doctor verification audit points at an admin user id
+if ($approved.verifiedByAdminUserId -ne $adminUser.id) {
+  throw "Expected verifiedByAdminUserId=$($adminUser.id) but got $($approved.verifiedByAdminUserId)"
+}
+
+# Admin: appointments list
 $allAdminAppts = Invoke-RestMethod -Method Get -Uri "$gateway/api/admin/appointments" -Headers $adminHeaders
 $allAdminApptsArr = @($allAdminAppts)
 $adminFound = $allAdminApptsArr | Where-Object { $_.id -eq $appt.id } | Select-Object -First 1
@@ -512,47 +589,22 @@ if (-not $adminFound) {
   throw "Admin appointments list did not include created appointment id=$($appt.id)"
 }
 
-$cancelled = Invoke-RestMethod -Method Delete -Uri "$gateway/api/admin/appointments/$($appt.id)" -Headers $adminHeaders
-Write-Host "Admin cancelled appointment id=$($cancelled.id) status=$($cancelled.status)"
-if ($cancelled.status -ne "CANCELLED") {
-  throw "Expected admin-cancelled appointment to be CANCELLED; got '$($cancelled.status)'"
+# Admin: payment oversight (review)
+$adminPayments = Invoke-RestMethod -Method Get -Uri "$gateway/api/admin/payments?appointmentId=$($appt.id)" -Headers $adminHeaders
+$pmt = @($adminPayments) | Select-Object -First 1
+if (-not $pmt) {
+  throw "Expected to find payment for appointmentId=$($appt.id) in /api/admin/payments"
 }
 
-$apptsAfterCancel = Invoke-RestMethod -Method Get -Uri "$gateway/api/appointments" -Headers $patientHeaders
-$after = @($apptsAfterCancel) | Where-Object { $_.id -eq $appt.id } | Select-Object -First 1
-if (-not $after) {
-  throw "Patient appointments did not contain appointment id=$($appt.id) after admin cancel"
+$reviewBody = @{ note = "Smoke test review ($suffix)" } | ConvertTo-Json
+$reviewed = Invoke-RestMethod -Method Post -Uri "$gateway/api/admin/payments/$($pmt.id)/review" -ContentType "application/json" -Headers $adminHeaders -Body $reviewBody
+Write-Host "Reviewed payment id=$($reviewed.id) status=$($reviewed.status) reviewedAt=$($reviewed.reviewedAt)"
+if (-not $reviewed.reviewedAt) {
+  throw "Expected reviewedAt to be set after admin review"
 }
-if ($after.status -ne "CANCELLED") {
-  throw "Expected patient to see CANCELLED after admin cancel; got '$($after.status)'"
-}
-
-# Telemedicine session should be cancelled by appointment.cancelled event
-$cancelDeadline = (Get-Date).AddSeconds(30)
-$cancelSession = $null
-while ((Get-Date) -lt $cancelDeadline) {
-  try {
-    $cancelSession = Invoke-RestMethod -Method Get -Uri "$gateway/api/telemedicine/sessions/appointment/$($appt.id)" -Headers $patientHeaders
-    if ($cancelSession -and $cancelSession.status -eq "CANCELLED") { break }
-  } catch {
-    # ignore and retry
-  }
-  Start-Sleep -Seconds 2
+if ($reviewed.reviewedByAdminUserId -ne $adminUser.id) {
+  throw "Expected reviewedByAdminUserId=$($adminUser.id) but got $($reviewed.reviewedByAdminUserId)"
 }
 
-if (-not $cancelSession) {
-  throw "Telemedicine session not found after cancellation (appointment id=$($appt.id))"
-}
-if ($cancelSession.status -ne "CANCELLED") {
-  throw "Expected telemedicine session status CANCELLED after admin cancel; got '$($cancelSession.status)'"
-}
-
-Write-Host "Telemedicine session cancelled status=$($cancelSession.status)"
-
-$patientNotifs2 = Invoke-RestMethod -Method Get -Uri "$gateway/api/notifications?limit=20" -Headers $patientHeaders
-Write-Host "Patient notifications after cancel count=$(@($patientNotifs2).Count)"
-$adminNotifs2 = Invoke-RestMethod -Method Get -Uri "$gateway/api/admin/notifications?limit=20" -Headers $adminHeaders
-Write-Host "Admin notifications after cancel count=$(@($adminNotifs2).Count)"
-
-Write-Host "[7/7] Done. (doctor.verified, payment.completed, appointment.confirmed/cancelled, telemedicine.session, prescriptions, notifications, admin.users/appointments verified)."
+Write-Host "Done. (doctor.verified + audit, payment.completed + admin.review, appointment.confirmed, telemedicine.session, consultation.completed -> notifications, prescriptions, RBAC verified)."
 

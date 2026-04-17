@@ -1,6 +1,7 @@
 package lk.medilink.appointment;
 
 import lk.medilink.appointment.repo.AppointmentRepository;
+import lk.medilink.appointment.realtime.AppointmentSseHub;
 import lk.medilink.appointment.service.AppointmentAppService;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -18,6 +19,7 @@ class AppointmentAppServiceTest {
 		AppointmentRepository repo = mock(AppointmentRepository.class);
 		RabbitTemplate rabbit = mock(RabbitTemplate.class);
 		RestTemplateBuilder builder = mock(RestTemplateBuilder.class);
+		AppointmentSseHub sseHub = mock(AppointmentSseHub.class);
 		RestTemplate rest = mock(RestTemplate.class);
 		when(builder.setConnectTimeout(any())).thenReturn(builder);
 		when(builder.setReadTimeout(any())).thenReturn(builder);
@@ -29,6 +31,7 @@ class AppointmentAppServiceTest {
 			repo,
 			rabbit,
 			builder,
+			sseHub,
 			"http://doctor-service:8084",
 			"http://patient-service:8086"
 		);

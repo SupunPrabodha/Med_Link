@@ -1,0 +1,12 @@
+SE3020 – Distributed Systems (Assignment 1)
+Project: AI-Enabled Smart Healthcare Appointment & Telemedicine Platform (Microservices)
+
+GitHub Repository:
+<PASTE_YOUR_GITHUB_REPO_LINK_HERE>
+
+YouTube Demo/Presentation Video:
+<PASTE_YOUR_YOUTUBE_LINK_HERE>
+
+Notes:
+- Ensure the repo is public OR grant access to the evaluator.
+- Ensure the YouTube video is unlisted/public and accessible.

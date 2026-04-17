@@ -13,10 +13,15 @@ type DoctorProfile = {
   status: 'PENDING' | 'VERIFIED' | 'REJECTED'
   updatedAt: string
   rejectionReason?: string | null
+  verifiedAt?: string | null
+  verifiedByAdminUserId?: number | null
+  rejectedAt?: string | null
+  rejectedByAdminUserId?: number | null
 }
 
 export function AdminDoctorsPage() {
   const [rows, setRows] = useState<DoctorProfile[]>([])
+  const [recent, setRecent] = useState<DoctorProfile[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState<Record<number, string>>({})
@@ -25,8 +30,12 @@ export function AdminDoctorsPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await api.get<DoctorProfile[]>('/admin/doctors/pending')
-      setRows(res.data)
+      const [pendingRes, recentRes] = await Promise.all([
+        api.get<DoctorProfile[]>('/admin/doctors/pending'),
+        api.get<DoctorProfile[]>('/admin/doctors/recent-decisions'),
+      ])
+      setRows(pendingRes.data)
+      setRecent(recentRes.data)
     } catch (err: any) {
       setError(formatApiError(err, 'Failed to load pending doctors'))
     } finally {
@@ -135,6 +144,60 @@ export function AdminDoctorsPage() {
                 <tr>
                   <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
                     No pending doctors.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold text-slate-900">Recent verification decisions</div>
+            <div className="text-xs text-slate-500">Audit trail (latest 20)</div>
+          </div>
+          <Button variant="secondary" onClick={load} disabled={loading}>
+            {loading ? 'Loading…' : 'Refresh'}
+          </Button>
+        </div>
+
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 text-xs text-slate-600">
+              <tr>
+                <th className="px-3 py-2 font-semibold">Doctor</th>
+                <th className="px-3 py-2 font-semibold">Status</th>
+                <th className="px-3 py-2 font-semibold">Decision</th>
+                <th className="px-3 py-2 font-semibold">Reason</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {recent.map((d) => {
+                const decidedAt = d.verifiedAt ?? d.rejectedAt ?? d.updatedAt
+                const decidedBy = d.verifiedByAdminUserId ?? d.rejectedByAdminUserId
+                return (
+                  <tr key={`recent-${d.id}`} className="hover:bg-slate-50">
+                    <td className="px-3 py-3">
+                      <div className="font-medium text-slate-900">{d.fullName}</div>
+                      <div className="font-mono text-xs text-slate-600">User ID {d.userId}</div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <Badge>{d.status}</Badge>
+                    </td>
+                    <td className="px-3 py-3 text-slate-700">
+                      <div className="text-xs text-slate-600">{new Date(decidedAt).toLocaleString()}</div>
+                      <div className="text-xs text-slate-600">Admin {decidedBy ?? '—'}</div>
+                    </td>
+                    <td className="px-3 py-3 text-slate-700">{d.rejectionReason ?? '—'}</td>
+                  </tr>
+                )
+              })}
+              {recent.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-3 py-8 text-center text-slate-500">
+                    No recent decisions.
                   </td>
                 </tr>
               )}

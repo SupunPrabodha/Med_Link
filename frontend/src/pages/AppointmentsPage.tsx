@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { hasRole, useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
+import { connectSse } from '../lib/sse'
 import { Alert, Badge, Button, Card, Label, Select } from '../ui/primitives'
 
 type DoctorOption = {
@@ -23,6 +24,8 @@ type Appointment = {
 export function AppointmentsPage() {
   const { user } = useAuth()
   const isAdmin = hasRole(user, 'ADMIN')
+
+  const sseRef = useRef<{ close: () => void } | null>(null)
 
   const [rows, setRows] = useState<Appointment[]>([])
   const [doctors, setDoctors] = useState<DoctorOption[]>([])
@@ -153,11 +156,36 @@ export function AppointmentsPage() {
   }, [])
 
   useEffect(() => {
-    const id = window.setInterval(() => {
-      void refresh()
-    }, 10_000)
-    return () => window.clearInterval(id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Real-time updates via SSE (no polling)
+    const token = localStorage.getItem('medilink.token')
+    if (!token) return
+
+    sseRef.current?.close()
+    sseRef.current = connectSse(isAdmin ? '/appointments/admin/stream' : '/appointments/stream', token, {
+      onEvent: (evt) => {
+        if (evt.event !== 'appointment') return
+        try {
+          const appt = JSON.parse(evt.data) as Appointment
+          setRows((prev) => {
+            const idx = prev.findIndex((r) => r.id === appt.id)
+            const next = idx === -1 ? [...prev, appt] : prev.map((r) => (r.id === appt.id ? appt : r))
+            next.sort((a, b) => new Date(a.slotTime).getTime() - new Date(b.slotTime).getTime())
+            return next
+          })
+        } catch {
+          // ignore parse errors
+        }
+      },
+      onError: () => {
+        // keep UI quiet; user can hit Refresh if needed
+      },
+      reconnectMs: 1500,
+    })
+
+    return () => {
+      sseRef.current?.close()
+      sseRef.current = null
+    }
   }, [isAdmin])
 
   useEffect(() => {

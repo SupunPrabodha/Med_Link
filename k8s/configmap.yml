@@ -7,4 +7,7 @@ data:
   EUREKA_URL: "http://service-discovery:8761/eureka"
   RABBIT_HOST: "rabbitmq"
   JITSI_BASE_URL: "https://meet.jit.si"
+  AI_SYMPTOM_ENABLED: "false"
+  AI_SYMPTOM_BASE_URL: "http://ai-symptom-service:8000"
+  AI_SYMPTOM_MODEL: ""
 

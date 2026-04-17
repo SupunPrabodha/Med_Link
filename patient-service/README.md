@@ -1,6 +1,11 @@
-## patient-service (scaffold)
+## patient-service
 
-This module is intentionally a minimal scaffold so another team member can implement patient features.
+Patient management service.
+
+Implemented features:
+- Patient profile create/update + profile photo upload
+- Medical report upload/list/download/delete
+- Internal endpoints used by other services (report lookups/download)
 
 Local dev defaults:
 - HTTP port: `8086`

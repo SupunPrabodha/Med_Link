@@ -12,6 +12,8 @@ public interface DoctorProfileRepository extends JpaRepository<DoctorProfile, Lo
 
 	List<DoctorProfile> findByStatus(VerificationStatus status);
 
+	List<DoctorProfile> findTop20ByStatusNotOrderByUpdatedAtDesc(VerificationStatus status);
+
 	List<DoctorProfile> findByStatusAndSpecializationContainingIgnoreCase(VerificationStatus status, String specialization);
 }
 

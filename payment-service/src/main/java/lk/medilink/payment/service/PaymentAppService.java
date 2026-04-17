@@ -82,6 +82,36 @@ public class PaymentAppService {
 	}
 
 	@Transactional
+	public Payment reviewPayment(Long paymentId, Long adminUserId, String note) {
+		Payment p = repo.findById(paymentId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found"));
+		p.markReviewed(adminUserId, note == null ? null : note.trim());
+		return repo.save(p);
+	}
+
+	@Transactional
+	public Payment flagPaymentDispute(Long paymentId, Long adminUserId, String note) {
+		Payment p = repo.findById(paymentId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found"));
+		p.markDisputed(adminUserId, note == null ? null : note.trim());
+		return repo.save(p);
+	}
+
+	@Transactional
+	public Payment refundPayment(Long paymentId, Long adminUserId, String note) {
+		Payment p = repo.findById(paymentId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found"));
+		if (p.getStatus() != PaymentStatus.COMPLETED) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only completed payments can be marked refunded");
+		}
+		if (p.getRefundedAt() != null) {
+			return p;
+		}
+		p.markRefunded(adminUserId, note == null ? null : note.trim());
+		return repo.save(p);
+	}
+
+	@Transactional
 	public PaymentIntentResponse createPayHereIntent(Long patientId,
 	                                               String patientEmail,
 	                                               Long appointmentId,

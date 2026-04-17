@@ -5,6 +5,7 @@ import lk.medilink.appointment.domain.AppointmentApproval;
 import lk.medilink.appointment.domain.AppointmentStatus;
 import lk.medilink.appointment.messaging.AppointmentEvents;
 import lk.medilink.appointment.messaging.RabbitConfig;
+import lk.medilink.appointment.realtime.AppointmentSseHub;
 import lk.medilink.appointment.repo.AppointmentRepository;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,10 +40,12 @@ public class AppointmentAppService {
 	private final RestTemplate rest;
 	private final String doctorBaseUrl;
 	private final String patientBaseUrl;
+	private final AppointmentSseHub sse;
 
 	public AppointmentAppService(AppointmentRepository repo,
 	                            RabbitTemplate rabbit,
 	                            RestTemplateBuilder restTemplateBuilder,
+	                            AppointmentSseHub sse,
 	                            @Value("${app.doctor-base-url:http://localhost:8084}") String doctorBaseUrl,
 	                            @Value("${app.patient-base-url:http://localhost:8086}") String patientBaseUrl) {
 		this.repo = repo;
@@ -53,6 +56,7 @@ public class AppointmentAppService {
 				.build();
 		this.doctorBaseUrl = doctorBaseUrl;
 		this.patientBaseUrl = patientBaseUrl;
+		this.sse = sse;
 	}
 
 	@Transactional
@@ -77,6 +81,7 @@ public class AppointmentAppService {
 		Appointment saved = repo.save(new Appointment(patientId, doctorId, slotTime, AppointmentStatus.PENDING_PAYMENT));
 		rabbit.convertAndSend(RabbitConfig.EXCHANGE, "appointment.created",
 				new AppointmentEvents.AppointmentCreated(saved.getId(), patientId, doctorId, slotTime));
+		sse.publish(saved);
 		return saved;
 	}
 
@@ -116,6 +121,7 @@ public class AppointmentAppService {
 
 		rabbit.convertAndSend(RabbitConfig.EXCHANGE, "appointment.rescheduled",
 				new AppointmentEvents.AppointmentRescheduled(appt.getId(), appt.getPatientId(), appt.getDoctorId(), oldSlotTime, newSlotTime, Instant.now()));
+		sse.publish(appt);
 		return appt;
 	}
 
@@ -195,6 +201,7 @@ public class AppointmentAppService {
 		appt.setStatus(AppointmentStatus.CANCELLED);
 		rabbit.convertAndSend(RabbitConfig.EXCHANGE, "appointment.cancelled",
 				new AppointmentEvents.AppointmentCancelled(appt.getId(), appt.getPatientId(), appt.getDoctorId(), appt.getSlotTime()));
+		sse.publish(appt);
 		return appt;
 	}
 
@@ -203,7 +210,7 @@ public class AppointmentAppService {
 		Appointment appt = repo.findById(appointmentId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment not found"));
 
-		Long doctorId = resolveDoctorIdForUser(doctorUserId);
+		Long doctorId = resolveDoctorIdForUserInternal(doctorUserId);
 		if (!doctorId.equals(appt.getDoctorId())) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed");
 		}
@@ -214,6 +221,7 @@ public class AppointmentAppService {
 		appt.setStatus(AppointmentStatus.CANCELLED);
 		rabbit.convertAndSend(RabbitConfig.EXCHANGE, "appointment.cancelled",
 				new AppointmentEvents.AppointmentCancelled(appt.getId(), appt.getPatientId(), appt.getDoctorId(), appt.getSlotTime()));
+		sse.publish(appt);
 		return appt;
 	}
 
@@ -222,7 +230,7 @@ public class AppointmentAppService {
 	}
 
 	public List<Appointment> listForDoctorUser(Long doctorUserId) {
-		Long doctorId = resolveDoctorIdForUser(doctorUserId);
+		Long doctorId = resolveDoctorIdForUserInternal(doctorUserId);
 		return repo.findByDoctorIdOrderBySlotTimeAsc(doctorId);
 	}
 
@@ -231,7 +239,7 @@ public class AppointmentAppService {
 	}
 
 	public List<DoctorPatientWithReportsResponse> listConfirmedPatientsWithReportsForDoctorUser(Long doctorUserId) {
-		Long doctorId = resolveDoctorIdForUser(doctorUserId);
+		Long doctorId = resolveDoctorIdForUserInternal(doctorUserId);
 		List<Appointment> confirmedAppointments = repo.findByDoctorIdAndStatusOrderBySlotTimeAsc(doctorId, AppointmentStatus.CONFIRMED);
 		if (confirmedAppointments.isEmpty()) {
 			return List.of();
@@ -278,7 +286,7 @@ public class AppointmentAppService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid patientId or reportId");
 		}
 
-		Long doctorId = resolveDoctorIdForUser(doctorUserId);
+		Long doctorId = resolveDoctorIdForUserInternal(doctorUserId);
 		boolean allowed = repo.existsByDoctorIdAndPatientIdAndStatus(doctorId, patientId, AppointmentStatus.CONFIRMED);
 		if (!allowed) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed");
@@ -325,7 +333,7 @@ public class AppointmentAppService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "appoinmentApproval is required");
 		}
 
-		Long doctorId = resolveDoctorIdForUser(doctorUserId);
+		Long doctorId = resolveDoctorIdForUserInternal(doctorUserId);
 		Appointment appt = repo.findById(appointmentId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment not found"));
 
@@ -344,11 +352,16 @@ public class AppointmentAppService {
 			rabbit.convertAndSend(RabbitConfig.EXCHANGE, "appointment.cancelled",
 					new AppointmentEvents.AppointmentCancelled(appt.getId(), appt.getPatientId(), appt.getDoctorId(), appt.getSlotTime()));
 		}
+		sse.publish(appt);
 
 		return appt;
 	}
 
-	private Long resolveDoctorIdForUser(Long doctorUserId) {
+	public Long resolveDoctorIdForUser(Long doctorUserId) {
+		return resolveDoctorIdForUserInternal(doctorUserId);
+	}
+
+	private Long resolveDoctorIdForUserInternal(Long doctorUserId) {
 		try {
 			String uri = UriComponentsBuilder.fromHttpUrl(doctorBaseUrl)
 					.path("/api/doctors/me/profile")
