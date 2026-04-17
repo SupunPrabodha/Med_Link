@@ -244,7 +244,7 @@ export function DoctorProfilePage() {
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="text-sm font-semibold text-slate-900">My doctor profile</div>
+            <div className="text-sm font-semibold tracking-wide text-slate-900">My doctor profile</div>
             <div className="text-xs text-slate-500">Manage your profile and submit for verification</div>
           </div>
           {profile && <Badge>{profile.status}</Badge>}
@@ -293,32 +293,32 @@ export function DoctorProfilePage() {
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <div>
             <Label>Full name</Label>
-            <div className="mt-1">
-              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            <div className="mt-1 rounded-lg border border-slate-200 bg-white/60 p-2">
+              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} className="border-0 bg-transparent" />
             </div>
           </div>
           <div>
             <Label>Phone (optional)</Label>
-            <div className="mt-1">
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+94..." />
+            <div className="mt-1 rounded-lg border border-slate-200 bg-white/60 p-2">
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+94..." className="border-0 bg-transparent" />
             </div>
           </div>
           <div>
             <Label>Registration no</Label>
-            <div className="mt-1">
-              <Input value={registrationNo} onChange={(e) => setRegistrationNo(e.target.value)} />
+            <div className="mt-1 rounded-lg border border-slate-200 bg-white/60 p-2">
+              <Input value={registrationNo} onChange={(e) => setRegistrationNo(e.target.value)} className="border-0 bg-transparent" />
             </div>
           </div>
           <div>
             <Label>Specialization</Label>
-            <div className="mt-1">
-              <Input value={specialization} onChange={(e) => setSpecialization(e.target.value)} placeholder="e.g., Dermatologist" />
+            <div className="mt-1 rounded-lg border border-slate-200 bg-white/60 p-2">
+              <Input value={specialization} onChange={(e) => setSpecialization(e.target.value)} placeholder="e.g., Dermatologist" className="border-0 bg-transparent" />
             </div>
           </div>
           <div>
             <Label>Documents URL (optional)</Label>
-            <div className="mt-1">
-              <Input value={documentsUrl} onChange={(e) => setDocumentsUrl(e.target.value)} placeholder="https://..." />
+            <div className="mt-1 rounded-lg border border-slate-200 bg-white/60 p-2">
+              <Input value={documentsUrl} onChange={(e) => setDocumentsUrl(e.target.value)} placeholder="https://..." className="border-0 bg-transparent" />
             </div>
           </div>
         </div>
@@ -347,7 +347,7 @@ export function DoctorProfilePage() {
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="text-sm font-semibold text-slate-900">Availability</div>
+            <div className="text-sm font-semibold tracking-wide text-slate-900">Availability</div>
             <div className="text-xs text-slate-500">Patients can only book within these weekly blocks (30-minute slots).</div>
           </div>
           <Button variant="secondary" onClick={loadAvailability} disabled={availLoading}>
@@ -399,7 +399,7 @@ export function DoctorProfilePage() {
 
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs text-slate-600">
+            <thead className="hospital-table-head">
               <tr>
                 <th className="px-3 py-2 font-semibold">Day</th>
                 <th className="px-3 py-2 font-semibold">Start</th>
@@ -409,7 +409,7 @@ export function DoctorProfilePage() {
             </thead>
             <tbody className="divide-y divide-slate-200">
               {availability.map((b, idx) => (
-                <tr key={`${b.dayOfWeek}-${b.startTime}-${b.endTime}-${idx}`} className="hover:bg-slate-50">
+                <tr key={`${b.dayOfWeek}-${b.startTime}-${b.endTime}-${idx}`} className="hospital-table-row">
                   <td className="px-3 py-3 text-xs text-slate-700">{b.dayOfWeek}</td>
                   <td className="px-3 py-3 font-mono text-xs text-slate-700">{normalizeTime(b.startTime)}</td>
                   <td className="px-3 py-3 font-mono text-xs text-slate-700">{normalizeTime(b.endTime)}</td>
