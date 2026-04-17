@@ -41,11 +41,11 @@ export function AppShell() {
 	}
 
 	return (
-		<div className="min-h-screen bg-slate-50">
-			<div className="border-b border-slate-200 bg-white">
+		<div className="hospital-shell">
+			<div className="hospital-topbar">
 				<div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
 					<div className="flex items-center gap-3">
-						<Link to="/" className="text-sm font-semibold text-slate-900">
+						<Link to="/" className="text-sm font-semibold tracking-wide text-slate-900">
 							MediLink LK
 						</Link>
 						{user && (
@@ -66,7 +66,7 @@ export function AppShell() {
 			</div>
 
 			<div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 md:grid-cols-[240px_1fr]">
-				<aside className="rounded-xl border border-slate-200 bg-white p-3 md:sticky md:top-6 md:self-start">
+				<aside className="hospital-panel rounded-xl p-3 md:sticky md:top-6 md:self-start">
 					<div className="space-y-1">
 						{items
 							.filter((i) => (i.show ? i.show(roles) : true))
@@ -78,8 +78,8 @@ export function AppShell() {
 										to={i.to}
 										aria-current={active ? 'page' : undefined}
 										className={cn(
-											'block rounded-lg px-3 py-2 text-sm transition',
-											active ? 'bg-slate-100 font-medium text-slate-900' : 'text-slate-700 hover:bg-slate-50',
+											'hospital-nav-link',
+											active ? 'hospital-nav-link-active' : 'hospital-nav-link-inactive',
 										)}
 									>
 										{i.label}
