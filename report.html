@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MediLink LK – SE3020 Distributed Systems (Assignment 1) Report</title>
+  <style>
+    :root { --fg:#111; --muted:#555; --border:#ddd; }
+    @page { size: A4; margin: 18mm 16mm; }
+    html, body { padding:0; margin:0; }
+    body { font-family: Arial, Helvetica, sans-serif; color: var(--fg); font-size: 11pt; line-height: 1.4; }
+    .page { padding: 0; }
+    h1 { font-size: 20pt; margin: 0 0 8px 0; }
+    h2 { font-size: 14pt; margin: 18px 0 8px 0; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+    h3 { font-size: 12pt; margin: 14px 0 6px 0; }
+    p { margin: 6px 0; }
+    ul { margin: 6px 0 6px 18px; }
+    li { margin: 3px 0; }
+    .muted { color: var(--muted); }
+    .box { border: 1px solid var(--border); padding: 10px 12px; border-radius: 6px; }
+    table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+    th, td { border: 1px solid var(--border); padding: 6px 8px; vertical-align: top; }
+    th { background: #f6f6f6; text-align: left; }
+    code { font-family: Consolas, "Courier New", monospace; font-size: 10pt; }
+    pre { background: #fafafa; border: 1px solid var(--border); padding: 10px 12px; border-radius: 6px; overflow-x: auto; }
+    .toc a { color: inherit; text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .hr { border-top: 1px solid var(--border); margin: 14px 0; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>MediLink LK – AI-Enabled Smart Healthcare Appointment & Telemedicine Platform</h1>
+    <p class="muted">SE3020 – Distributed Systems (Assignment 1) • Report • Date: 2026-04-17</p>
+
+    <div class="box">
+      <p><strong>Repository scope</strong>: Microservices-based healthcare platform demonstrating service discovery, API gateway with JWT/RBAC, per-service databases, async messaging, and end-to-end workflows (appointments → payments → telemedicine → notifications → prescriptions).</p>
+      <p><strong>Deliverables</strong>: This report is designed to be exported as <code>report.pdf</code>. It contains no screenshots; code excerpts are included as plain text.</p>
+    </div>
+
+    <h2 id="toc">Table of Contents</h2>
+    <ol class="toc">
+      <li><a href="#intro">Introduction</a></li>
+      <li><a href="#arch">Architecture</a></li>
+      <li><a href="#apis">Service Interfaces (API contracts)</a></li>
+      <li><a href="#workflows">Workflows</a></li>
+      <li><a href="#security">Security & Authentication</a></li>
+      <li><a href="#deploy">Deployment</a></li>
+      <li><a href="#contrib">Individual Contributions</a></li>
+      <li><a href="#appendix">Appendix – Code Written (text excerpts)</a></li>
+    </ol>
+
+    <h2 id="intro">1. Introduction</h2>
+    <p>MediLink LK is a distributed, microservices-based healthcare platform concept that supports doctor onboarding/verification, appointment booking, online payments, telemedicine session provisioning, consultation completion, patient notifications, and digital prescriptions.</p>
+    <p><strong>Goals (assignment-aligned)</strong>:</p>
+    <ul>
+      <li>Demonstrate microservices separation and independent deployment</li>
+      <li>Use API Gateway + Service Discovery for routing</li>
+      <li>Implement JWT authentication and role-based access control</li>
+      <li>Use asynchronous messaging (RabbitMQ) for event-driven workflows</li>
+      <li>Maintain per-service data ownership (PostgreSQL per service)</li>
+      <li>Provide a repeatable end-to-end proof run (smoke test)</li>
+    </ul>
+
+    <h2 id="arch">2. Architecture (High-level)</h2>
+    <p><strong>Key components</strong>:</p>
+    <ul>
+      <li><strong>Frontend</strong> (React + Vite, served via Nginx)</li>
+      <li><strong>API Gateway</strong> (Spring Cloud Gateway) for routing + JWT validation + RBAC</li>
+      <li><strong>Service Discovery</strong> (Eureka) for dynamic registration</li>
+      <li><strong>Domain services</strong>: auth, patient, doctor, appointment, payment, telemedicine, notification, prescription, symptom checker</li>
+      <li><strong>RabbitMQ</strong> for asynchronous events</li>
+      <li><strong>PostgreSQL</strong> per service for data ownership</li>
+    </ul>
+
+    <h3>2.1 Architectural Diagram (text)</h3>
+    <pre><code>Browser
+  │
+  ▼
+Frontend (5173)
+  │  HTTP (/api)
+  ▼
+API Gateway (8090)  ───────────────► Eureka (8761)
+  │   routes (lb://...)             ▲
+  ├────────► auth-service (8081)    │
+  ├────────► patient-service (8086) │
+  ├────────► doctor-service (8084)  │
+  ├────────► appointment-service (8082) ── publish ──► RabbitMQ (5672)
+  ├────────► payment-service (8085)       publish ───► RabbitMQ (5672)
+  ├────────► telemedicine-service (8087)  publish ───► RabbitMQ (5672)
+  ├────────► prescription-service (8088)
+  └────────► symptom-checker-service (8089) ──► (optional) ai-symptom-service (8010)
+
+RabbitMQ consumers:
+  notification-service (8083)  ◄── consumes events, stores notifications
+
+Databases (PostgreSQL): authdb, patientdb, doctordb, appointmentdb, paymentdb, telemedicinedb,
+                        prescriptiondb, notificationdb, symptomdb
+</code></pre>
+
+    <h2 id="apis">3. Service Interfaces (API contracts)</h2>
+    <p class="muted">All endpoints are accessed through the API Gateway in normal operation. Identity is injected by the gateway into <code>X-User-Id</code> and <code>X-User-Role</code> headers.</p>
+
+    <h3>3.1 Auth Service</h3>
+    <ul>
+      <li><code>POST /api/auth/register</code> – Register and receive JWT</li>
+      <li><code>POST /api/auth/login</code> – Login and receive JWT</li>
+      <li><code>GET /api/admin/users</code> – Admin list/search users</li>
+      <li><code>DELETE /api/admin/users/{id}</code> – Admin delete a non-admin user</li>
+    </ul>
+
+    <h3>3.2 Doctor Service</h3>
+    <ul>
+      <li><code>POST /api/doctors/me/profile</code> – Upsert doctor profile</li>
+      <li><code>POST /api/doctors/me/profile-photo</code> – Upload doctor profile photo</li>
+      <li><code>GET /api/doctors/me/profile</code> – Get own profile</li>
+      <li><code>GET /api/doctors</code> – Search verified doctors (optional specialization filter)</li>
+      <li><code>GET /api/doctors/{doctorId}/availability</code> – Get availability blocks</li>
+      <li><code>GET /api/doctors/{doctorId}/availability/slots</code> – Generate slots</li>
+      <li><code>GET /api/doctors/{doctorId}/availability/validate</code> – Validate a proposed slot time</li>
+      <li><code>GET /api/admin/doctors/pending</code> – Admin list pending verifications</li>
+      <li><code>GET /api/admin/doctors/recent-decisions</code> – Admin recent approve/reject decisions</li>
+      <li><code>POST /api/admin/doctors/{doctorId}/approve</code> – Admin approve doctor</li>
+      <li><code>POST /api/admin/doctors/{doctorId}/reject</code> – Admin reject doctor</li>
+    </ul>
+
+    <h3>3.3 Patient Service</h3>
+    <ul>
+      <li><code>GET /api/patients/me/profile</code> – Get own patient profile</li>
+      <li><code>POST /api/patients/me/profile</code> – Upsert patient profile</li>
+      <li><code>POST /api/patients/me/profile-photo</code> – Upload patient profile photo</li>
+      <li><code>POST /api/patients/me/reports</code> – Upload medical report</li>
+      <li><code>GET /api/patients/me/reports</code> – List reports</li>
+      <li><code>GET /api/patients/me/reports/{id}/download</code> – Download report</li>
+      <li><code>DELETE /api/patients/me/reports/{id}</code> – Delete report</li>
+      <li><code>GET /api/admin/patients</code> – Admin list patient profiles</li>
+      <li><code>GET /api/admin/patients/{userId}/profile</code> – Admin get a patient profile</li>
+      <li><code>GET /api/admin/patients/{userId}/reports</code> – Admin list patient reports</li>
+      <li><code>GET /api/admin/patients/{userId}/reports/{id}/download</code> – Admin download patient report</li>
+    </ul>
+
+    <h3>3.4 Appointment Service</h3>
+    <ul>
+      <li><code>POST /api/appointments</code> – Create appointment</li>
+      <li><code>GET /api/appointments</code> – List patient appointments</li>
+      <li><code>GET /api/appointments/doctor/me</code> – List doctor appointments</li>
+      <li><code>PUT /api/appointments/doctor/me/{id}/approval</code> – Doctor approve/reject an appointment</li>
+      <li><code>GET /api/appointments/available-slots</code> – Available slots for a doctor</li>
+      <li><code>PUT /api/appointments/{id}/reschedule</code> – Reschedule appointment</li>
+      <li><code>DELETE /api/appointments/{id}</code> – Cancel appointment</li>
+      <li><code>GET /api/appointments/stream</code> – Patient SSE stream</li>
+      <li><code>GET /api/appointments/doctor/me/stream</code> – Doctor SSE stream</li>
+      <li><code>GET /api/appointments/admin/stream</code> – Admin SSE stream</li>
+      <li><code>GET /api/admin/appointments</code> – Admin list appointments</li>
+      <li><code>DELETE /api/admin/appointments/{id}</code> – Admin cancel appointment</li>
+    </ul>
+
+    <h3>3.5 Payment Service</h3>
+    <ul>
+      <li><code>POST /api/payments/intents/payhere</code> – Create PayHere intent</li>
+      <li><code>POST /api/payments/intents/stripe</code> – Create Stripe checkout intent</li>
+      <li><code>POST /api/payments/stripe/confirm</code> – Confirm Stripe session</li>
+      <li><code>POST /api/payments/callback/payhere</code> – PayHere server-to-server notify</li>
+      <li><code>POST /api/payments/callback/stripe</code> – Stripe webhook</li>
+      <li><code>GET /api/admin/payments</code> – Admin list payments</li>
+      <li><code>POST /api/admin/payments/{paymentId}/review</code> – Admin review payment</li>
+      <li><code>POST /api/admin/payments/{paymentId}/dispute</code> – Admin flag dispute</li>
+      <li><code>POST /api/admin/payments/{paymentId}/refund</code> – Admin refund</li>
+    </ul>
+
+    <h3>3.6 Telemedicine Service</h3>
+    <ul>
+      <li><code>GET /api/telemedicine/sessions/appointment/{appointmentId}</code> – Get session info (join URL)</li>
+      <li><code>POST /api/telemedicine/sessions/appointment/{appointmentId}/complete</code> – Mark consultation completed</li>
+    </ul>
+
+    <h3>3.7 Notification Service</h3>
+    <ul>
+      <li><code>GET /api/notifications</code> – List current user notifications</li>
+      <li><code>GET /api/admin/notifications</code> – Admin list notifications</li>
+    </ul>
+
+    <h3>3.8 Prescription Service</h3>
+    <ul>
+      <li><code>POST /api/prescriptions/doctor/me</code> – Doctor issue prescription</li>
+      <li><code>GET /api/prescriptions/doctor/me</code> – Doctor list issued prescriptions</li>
+      <li><code>GET /api/prescriptions/patient/me</code> – Patient list prescriptions</li>
+      <li><code>GET /api/prescriptions/{id}</code> – Get prescription (user-scoped)</li>
+      <li><code>GET /api/admin/prescriptions</code> – Admin list prescriptions</li>
+    </ul>
+
+    <h3>3.9 Symptom Checker Service (optional enhancement)</h3>
+    <ul>
+      <li><code>POST /api/symptoms/check</code> – Create assessment and receive recommendations</li>
+      <li><code>GET /api/symptoms/history</code> – List user assessment history</li>
+      <li><code>GET /api/symptoms/{id}</code> – Get a specific assessment</li>
+      <li><code>GET /api/admin/symptoms</code> – Admin view recent assessments</li>
+    </ul>
+
+    <h2 id="workflows">4. Workflows</h2>
+    <h3>4.1 Doctor onboarding + admin verification</h3>
+    <ol>
+      <li>Doctor registers/logins via <code>/api/auth/*</code>.</li>
+      <li>Doctor creates profile via <code>POST /api/doctors/me/profile</code>.</li>
+      <li>Admin approves via <code>POST /api/admin/doctors/{doctorId}/approve</code>.</li>
+    </ol>
+
+    <h3>4.2 Appointment booking → payment → confirmation</h3>
+    <ol>
+      <li>Patient books appointment via <code>POST /api/appointments</code> (initially pending payment).</li>
+      <li>Doctor approves via <code>PUT /api/appointments/doctor/me/{id}/approval</code>.</li>
+      <li>Patient creates payment intent via <code>POST /api/payments/intents/*</code>.</li>
+      <li>Payment callback/webhook marks payment completed and publishes an event.</li>
+      <li>Appointment transitions to confirmed asynchronously (event-driven).</li>
+    </ol>
+
+    <h3>4.3 Telemedicine session → consultation completion → notifications</h3>
+    <ol>
+      <li>After appointment confirmation, telemedicine session is provisioned and can be fetched via <code>GET /api/telemedicine/sessions/appointment/{id}</code>.</li>
+      <li>Doctor marks completion via <code>POST /api/telemedicine/sessions/appointment/{id}/complete</code>.</li>
+      <li>Both patient and doctor receive <code>consultation.completed</code> notifications (verified in smoke test).</li>
+    </ol>
+
+    <h3>4.4 Real-time appointment status updates (SSE)</h3>
+    <p>Appointment status changes are broadcast using Server-Sent Events so the UI can update in real time.</p>
+
+    <h2 id="security">5. Security & Authentication</h2>
+    <ul>
+      <li>JWT is issued by auth-service and validated at the API gateway.</li>
+      <li>The gateway enforces RBAC (role checks where configured) and injects identity headers (<code>X-User-Id</code>, <code>X-User-Role</code>, optional <code>X-User-Email</code>).</li>
+      <li>Downstream services authorize requests using these headers (least-privilege per endpoint).</li>
+    </ul>
+
+    <h2 id="deploy">6. Deployment</h2>
+    <h3>6.1 Docker Compose</h3>
+    <pre><code>docker compose up --build</code></pre>
+    <p>Key URLs:</p>
+    <ul>
+      <li>Frontend: <code>http://localhost:5173</code></li>
+      <li>Gateway: <code>http://localhost:8090</code></li>
+      <li>Eureka: <code>http://localhost:8761</code></li>
+      <li>RabbitMQ UI: <code>http://localhost:15672</code> (guest/guest)</li>
+    </ul>
+
+    <h3>6.2 Kubernetes</h3>
+    <p>Manifests are under <code>k8s/</code> and include deployments/services/config/secrets/ingress plus readiness/liveness probes.</p>
+
+    <h3>6.3 Automated proof run (smoke test)</h3>
+    <pre><code>powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke-test.ps1</code></pre>
+    <p class="muted">The smoke test executes the complete workflow through the gateway and validates key outcomes (confirmation, session provisioning, completion notifications, admin review actions).</p>
+
+    <h2 id="contrib">7. Individual Contributions</h2>
+    <p class="muted">Fill this section with member details and responsibilities.</p>
+    <ul>
+      <li>Member 1: &lt;name&gt; – &lt;areas&gt;</li>
+      <li>Member 2: &lt;name&gt; – &lt;areas&gt;</li>
+      <li>Member 3: &lt;name&gt; – &lt;areas&gt;</li>
+      <li>Member 4: &lt;name&gt; – &lt;areas&gt;</li>
+    </ul>
+
+    <h2 id="appendix">8. Appendix – Code Written (NO screenshots)</h2>
+
+    <h3>8.1 API Gateway JWT + RBAC header propagation (excerpt)</h3>
+    <p class="muted">File: <code>api-gateway/src/main/java/lk/medilink/gateway/security/JwtAuthGatewayFilter.java</code></p>
+    <pre><code>package lk.medilink.gateway.security;
+
+import io.jsonwebtoken.Claims;
+import lk.medilink.gateway.security.JwtService.JwtValidationResult;
+import org.springframework.cloud.gateway.filter.GatewayFilter;
+import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
+
+import java.util.List;
+
+@Component
+public class JwtAuthGatewayFilter extends AbstractGatewayFilterFactory&lt;JwtAuthGatewayFilter.Config&gt; {
+	private final JwtService jwtService;
+
+	public JwtAuthGatewayFilter(JwtService jwtService) {
+		super(Config.class);
+		this.jwtService = jwtService;
+	}
+
+	@Override
+	public GatewayFilter apply(Config config) {
+		return (exchange, chain) -&gt; {
+			String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+			if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+				return unauthorized(exchange, "Missing Bearer token");
+			}
+
+			JwtValidationResult result = jwtService.validate(authHeader.substring(7));
+			if (!result.valid()) {
+				return unauthorized(exchange, "Invalid token");
+			}
+
+			Claims claims = result.claims();
+			List&lt;String&gt; roles = jwtService.extractRoles(claims);
+			if (config.requiredRoles != null && !config.requiredRoles.isEmpty()) {
+				boolean ok = roles.stream().anyMatch(r -&gt; config.requiredRoles.contains(r));
+				if (!ok) {
+					return forbidden(exchange, "Insufficient role");
+				}
+			}
+
+			ServerWebExchange mutated = exchange.mutate()
+					.request(r -&gt; r.headers(h -&gt; {
+						h.add("X-User-Id", String.valueOf(claims.get("uid")));
+						h.add("X-User-Role", String.join(",", roles));
+						Object email = claims.get("email");
+						if (email != null) {
+							h.add("X-User-Email", String.valueOf(email));
+						}
+					}))
+					.build();
+
+			return chain.filter(mutated);
+		};
+	}
+
+	// ...
+}
+</code></pre>
+
+    <h3>8.2 Real-time appointment updates hub (excerpt)</h3>
+    <p class="muted">File: <code>appointment-service/src/main/java/lk/medilink/appointment/realtime/AppointmentSseHub.java</code></p>
+    <pre><code>package lk.medilink.appointment.realtime;
+
+import lk.medilink.appointment.domain.Appointment;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
+import java.time.Instant;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+@Component
+public class AppointmentSseHub {
+	private static final long EMITTER_TIMEOUT_MS = 30L * 60L * 1000L;
+
+	private final Map&lt;Long, Set&lt;SseEmitter&gt;&gt; patientEmitters = new ConcurrentHashMap&lt;&gt;();
+	private final Map&lt;Long, Set&lt;SseEmitter&gt;&gt; doctorEmitters = new ConcurrentHashMap&lt;&gt;();
+	private final Set&lt;SseEmitter&gt; adminEmitters = ConcurrentHashMap.newKeySet();
+
+	public SseEmitter registerPatient(Long patientUserId) { /* ... */ }
+	public SseEmitter registerDoctor(Long doctorId) { /* ... */ }
+	public SseEmitter registerAdmin() { /* ... */ }
+
+	public void publish(Appointment appt) {
+		if (appt == null || appt.getId() == null) {
+			return;
+		}
+		// Publishes appointment events to patient + doctor + admin streams
+		publishToSet(patientEmitters.get(appt.getPatientId()), appt);
+		publishToSet(doctorEmitters.get(appt.getDoctorId()), appt);
+		publishToSet(adminEmitters, appt);
+	}
+
+	private void publishToSet(Set&lt;SseEmitter&gt; emitters, Appointment appt) {
+		if (emitters == null || emitters.isEmpty()) {
+			return;
+		}
+		String eventId = appt.getId() + "-" + Instant.now().toEpochMilli();
+		SseEmitter.SseEventBuilder event = SseEmitter.event()
+				.id(eventId)
+				.name("appointment")
+				.data(appt, MediaType.APPLICATION_JSON);
+
+		for (SseEmitter emitter : emitters) {
+			try {
+				emitter.send(event);
+			} catch (IOException ex) {
+				emitter.complete();
+			}
+		}
+	}
+}
+</code></pre>
+
+    <h3>8.3 Telemedicine schema safety fix (excerpt)</h3>
+    <p class="muted">File: <code>telemedicine-service/src/main/java/lk/medilink/telemedicine/config/TelemedicineSchemaFixes.java</code></p>
+    <pre><code>package lk.medilink.telemedicine.config;
+
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+@Configuration
+public class TelemedicineSchemaFixes {
+	@Bean
+	ApplicationRunner telemedicineSchemaFixRunner(JdbcTemplate jdbc) {
+		return args -&gt; {
+			jdbc.execute("ALTER TABLE telemedicine_sessions DROP CONSTRAINT IF EXISTS telemedicine_sessions_status_check");
+			jdbc.execute("ALTER TABLE telemedicine_sessions " +
+					"ADD CONSTRAINT telemedicine_sessions_status_check " +
+					"CHECK (status in ('ACTIVE','COMPLETED','CANCELLED'))");
+		};
+	}
+}
+</code></pre>
+
+    <h3>8.4 Smoke test verification for consultation completion (excerpt)</h3>
+    <p class="muted">File: <code>scripts/smoke-test.ps1</code></p>
+    <pre><code># Completing consultation (doctor) and verifying notifications
+$completeResp = Invoke-RestMethod -Method Post -Uri "$gateway/api/telemedicine/sessions/appointment/$($appt.id)/complete" -Headers $doctorHeaders
+
+# Poll until session status becomes COMPLETED
+$completedSession = Invoke-RestMethod -Method Get -Uri "$gateway/api/telemedicine/sessions/appointment/$($appt.id)" -Headers $doctorHeaders
+
+# Verify consultation.completed notifications (patient + doctor)
+$pNotifs = Invoke-RestMethod -Method Get -Uri "$gateway/api/notifications?limit=50" -Headers $patientHeaders
+$dNotifs = Invoke-RestMethod -Method Get -Uri "$gateway/api/notifications?limit=50" -Headers $doctorHeaders
+</code></pre>
+
+    <div class="hr"></div>
+    <p class="muted">End of report.</p>
+  </div>
+</body>
+</html>

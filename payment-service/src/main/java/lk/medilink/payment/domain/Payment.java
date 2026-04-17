@@ -46,6 +46,33 @@ public class Payment {
 	@Column(nullable = true)
 	private Instant failedAt;
 
+	@Column(nullable = true)
+	private Instant reviewedAt;
+
+	@Column(nullable = true)
+	private Long reviewedByAdminUserId;
+
+	@Column(nullable = true, length = 1000)
+	private String reviewNote;
+
+	@Column(nullable = true)
+	private Instant disputedAt;
+
+	@Column(nullable = true)
+	private Long disputedByAdminUserId;
+
+	@Column(nullable = true, length = 1000)
+	private String disputeNote;
+
+	@Column(nullable = true)
+	private Instant refundedAt;
+
+	@Column(nullable = true)
+	private Long refundedByAdminUserId;
+
+	@Column(nullable = true, length = 1000)
+	private String refundNote;
+
 	protected Payment() {
 	}
 
@@ -108,6 +135,42 @@ public class Payment {
 		return failedAt;
 	}
 
+	public Instant getReviewedAt() {
+		return reviewedAt;
+	}
+
+	public Long getReviewedByAdminUserId() {
+		return reviewedByAdminUserId;
+	}
+
+	public String getReviewNote() {
+		return reviewNote;
+	}
+
+	public Instant getDisputedAt() {
+		return disputedAt;
+	}
+
+	public Long getDisputedByAdminUserId() {
+		return disputedByAdminUserId;
+	}
+
+	public String getDisputeNote() {
+		return disputeNote;
+	}
+
+	public Instant getRefundedAt() {
+		return refundedAt;
+	}
+
+	public Long getRefundedByAdminUserId() {
+		return refundedByAdminUserId;
+	}
+
+	public String getRefundNote() {
+		return refundNote;
+	}
+
 	public void markCompleted(String providerRef, Instant paidAt) {
 		this.status = PaymentStatus.COMPLETED;
 		this.providerRef = providerRef;
@@ -119,6 +182,27 @@ public class Payment {
 		this.status = PaymentStatus.FAILED;
 		this.providerRef = providerRef;
 		this.failedAt = failedAt;
+		this.updatedAt = Instant.now();
+	}
+
+	public void markReviewed(Long adminUserId, String note) {
+		this.reviewedAt = Instant.now();
+		this.reviewedByAdminUserId = adminUserId;
+		this.reviewNote = note;
+		this.updatedAt = Instant.now();
+	}
+
+	public void markDisputed(Long adminUserId, String note) {
+		this.disputedAt = Instant.now();
+		this.disputedByAdminUserId = adminUserId;
+		this.disputeNote = note;
+		this.updatedAt = Instant.now();
+	}
+
+	public void markRefunded(Long adminUserId, String note) {
+		this.refundedAt = Instant.now();
+		this.refundedByAdminUserId = adminUserId;
+		this.refundNote = note;
 		this.updatedAt = Instant.now();
 	}
 }

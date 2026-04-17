@@ -86,8 +86,7 @@ public class DoctorAppService {
 		profile.setConsultationFeeLkr(consultationFeeLkr);
 		profile.setClinicAddress(blankToNull(clinicAddress));
 		if (profile.getStatus() != VerificationStatus.VERIFIED) {
-			profile.setStatus(VerificationStatus.PENDING);
-			profile.setRejectionReason(null);
+			profile.resetVerificationToPending();
 		}
 		return repo.save(profile);
 	}
@@ -326,11 +325,10 @@ public class DoctorAppService {
 	}
 
 	@Transactional
-	public DoctorProfile approve(Long doctorId) {
+	public DoctorProfile approve(Long doctorId, Long adminUserId) {
 		DoctorProfile p = repo.findById(doctorId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor not found"));
-		p.setStatus(VerificationStatus.VERIFIED);
-		p.setRejectionReason(null);
+		p.markVerified(adminUserId);
 		DoctorProfile saved = repo.save(p);
 
 		rabbit.convertAndSend(RabbitConfig.EXCHANGE, "doctor.verified",
@@ -340,17 +338,20 @@ public class DoctorAppService {
 	}
 
 	@Transactional
-	public DoctorProfile reject(Long doctorId, String reason) {
+	public DoctorProfile reject(Long doctorId, Long adminUserId, String reason) {
 		DoctorProfile p = repo.findById(doctorId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor not found"));
-		p.setStatus(VerificationStatus.REJECTED);
-		p.setRejectionReason(reason);
+		p.markRejected(adminUserId, reason);
 		DoctorProfile saved = repo.save(p);
 
 		rabbit.convertAndSend(RabbitConfig.EXCHANGE, "doctor.rejected",
 				new DoctorEvents.DoctorRejected(saved.getId(), saved.getUserId(), reason, Instant.now()));
 
 		return saved;
+	}
+
+	public List<DoctorProfile> recentDecisions() {
+		return repo.findTop20ByStatusNotOrderByUpdatedAtDesc(VerificationStatus.PENDING);
 	}
 
 	private static String normalizeToE164(String raw) {

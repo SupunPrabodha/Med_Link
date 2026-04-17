@@ -1,0 +1,19 @@
+SE3020 – Distributed Systems (Assignment 1)
+Group ID: <GROUP_ID>
+
+Members:
+1) Name: <FULL_NAME>
+   Registration No: <REG_NO>
+   Student/Group Member ID: <ID>
+
+2) Name: <FULL_NAME>
+   Registration No: <REG_NO>
+   Student/Group Member ID: <ID>
+
+3) Name: <FULL_NAME>
+   Registration No: <REG_NO>
+   Student/Group Member ID: <ID>
+
+4) Name: <FULL_NAME>
+   Registration No: <REG_NO>
+   Student/Group Member ID: <ID>

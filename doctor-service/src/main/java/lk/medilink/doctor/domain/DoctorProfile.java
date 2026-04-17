@@ -48,6 +48,18 @@ public class DoctorProfile {
 	@Column(nullable = false)
 	private VerificationStatus status;
 
+	@Column(nullable = true)
+	private Instant verifiedAt;
+
+	@Column(nullable = true)
+	private Long verifiedByAdminUserId;
+
+	@Column(nullable = true)
+	private Instant rejectedAt;
+
+	@Column(nullable = true)
+	private Long rejectedByAdminUserId;
+
 	@Column(nullable = false)
 	private Instant updatedAt;
 
@@ -178,12 +190,58 @@ public class DoctorProfile {
 		return updatedAt;
 	}
 
+	public Instant getVerifiedAt() {
+		return verifiedAt;
+	}
+
+	public Long getVerifiedByAdminUserId() {
+		return verifiedByAdminUserId;
+	}
+
+	public Instant getRejectedAt() {
+		return rejectedAt;
+	}
+
+	public Long getRejectedByAdminUserId() {
+		return rejectedByAdminUserId;
+	}
+
 	public String getRejectionReason() {
 		return rejectionReason;
 	}
 
 	public void setRejectionReason(String rejectionReason) {
 		this.rejectionReason = rejectionReason;
+		this.updatedAt = Instant.now();
+	}
+
+	public void markVerified(Long adminUserId) {
+		this.status = VerificationStatus.VERIFIED;
+		this.verifiedAt = Instant.now();
+		this.verifiedByAdminUserId = adminUserId;
+		this.rejectionReason = null;
+		this.rejectedAt = null;
+		this.rejectedByAdminUserId = null;
+		this.updatedAt = Instant.now();
+	}
+
+	public void markRejected(Long adminUserId, String reason) {
+		this.status = VerificationStatus.REJECTED;
+		this.rejectionReason = reason;
+		this.rejectedAt = Instant.now();
+		this.rejectedByAdminUserId = adminUserId;
+		this.verifiedAt = null;
+		this.verifiedByAdminUserId = null;
+		this.updatedAt = Instant.now();
+	}
+
+	public void resetVerificationToPending() {
+		this.status = VerificationStatus.PENDING;
+		this.rejectionReason = null;
+		this.verifiedAt = null;
+		this.verifiedByAdminUserId = null;
+		this.rejectedAt = null;
+		this.rejectedByAdminUserId = null;
 		this.updatedAt = Instant.now();
 	}
 }

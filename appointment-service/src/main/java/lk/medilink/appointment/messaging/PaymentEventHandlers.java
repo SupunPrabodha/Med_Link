@@ -3,6 +3,7 @@ package lk.medilink.appointment.messaging;
 import lk.medilink.appointment.domain.Appointment;
 import lk.medilink.appointment.domain.AppointmentApproval;
 import lk.medilink.appointment.domain.AppointmentStatus;
+import lk.medilink.appointment.realtime.AppointmentSseHub;
 import lk.medilink.appointment.repo.AppointmentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,10 +21,12 @@ public class PaymentEventHandlers {
 
 	private final AppointmentRepository repo;
 	private final RabbitTemplate rabbit;
+	private final AppointmentSseHub sse;
 
-	public PaymentEventHandlers(AppointmentRepository repo, RabbitTemplate rabbit) {
+	public PaymentEventHandlers(AppointmentRepository repo, RabbitTemplate rabbit, AppointmentSseHub sse) {
 		this.repo = repo;
 		this.rabbit = rabbit;
+		this.sse = sse;
 	}
 
 	@RabbitListener(queues = "appointment.payment.completed")
@@ -58,6 +61,7 @@ public class PaymentEventHandlers {
 		}
 		appt.setStatus(AppointmentStatus.CONFIRMED);
 		repo.save(appt);
+		sse.publish(appt);
 
 		rabbit.convertAndSend(RabbitConfig.EXCHANGE, "appointment.confirmed",
 				new AppointmentEvents.AppointmentConfirmed(appt.getId(), appt.getPatientId(), appt.getDoctorId(), appt.getSlotTime(), Instant.now()));

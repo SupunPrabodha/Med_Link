@@ -2,13 +2,17 @@ package lk.medilink.appointment.web;
 
 import jakarta.validation.Valid;
 import lk.medilink.appointment.domain.Appointment;
+import lk.medilink.appointment.realtime.AppointmentSseHub;
 import lk.medilink.appointment.service.AppointmentAppService;
 import lk.medilink.appointment.web.dto.CreateAppointmentRequest;
 import lk.medilink.appointment.web.dto.RescheduleAppointmentRequest;
 import lk.medilink.appointment.web.dto.UpdateAppointmentApprovalRequest;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.Instant;
 import java.util.List;
@@ -17,9 +21,11 @@ import java.util.List;
 @RequestMapping("/api/appointments")
 public class AppointmentController {
 	private final AppointmentAppService service;
+	private final AppointmentSseHub sse;
 
-	public AppointmentController(AppointmentAppService service) {
+	public AppointmentController(AppointmentAppService service, AppointmentSseHub sse) {
 		this.service = service;
+		this.sse = sse;
 	}
 
 	@PostMapping
@@ -37,6 +43,26 @@ public class AppointmentController {
 	@GetMapping("/doctor/me")
 	public List<Appointment> myDoctorAppointments(@RequestHeader("X-User-Id") Long doctorUserId) {
 		return service.listForDoctorUser(doctorUserId);
+	}
+
+	@GetMapping(path = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	public SseEmitter streamForPatient(@RequestHeader("X-User-Id") Long patientId) {
+		return sse.registerPatient(patientId);
+	}
+
+	@GetMapping(path = "/doctor/me/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	public SseEmitter streamForDoctor(@RequestHeader("X-User-Id") Long doctorUserId) {
+		Long doctorId = service.resolveDoctorIdForUser(doctorUserId);
+		return sse.registerDoctor(doctorId);
+	}
+
+	@GetMapping(path = "/admin/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	public SseEmitter streamForAdmin(@RequestHeader(value = "X-User-Role", required = false) String roles) {
+		boolean admin = roles != null && roles.contains("ADMIN");
+		if (!admin) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed");
+		}
+		return sse.registerAdmin();
 	}
 
 	@PutMapping("/doctor/me/{id}/approval")

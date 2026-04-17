@@ -26,6 +26,26 @@ type MedicalReport = {
   uploadedAt: string
 }
 
+type Appointment = {
+  id: number
+  patientId: number
+  doctorId: number
+  slotTime: string
+  status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED'
+  appoinmentApproval?: 'APPROVED' | 'DECLINED' | null
+}
+
+type Prescription = {
+  id: number
+  doctorUserId: number
+  patientUserId: number
+  appointmentId?: number | null
+  diagnosis?: string | null
+  medications: string
+  notes?: string | null
+  issuedAt: string
+}
+
 function formatBytes(bytes: number) {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB']
@@ -60,6 +80,8 @@ export function PatientProfilePage() {
   const [photoUploading, setPhotoUploading] = useState(false)
 
   const [reports, setReports] = useState<MedicalReport[]>([])
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([])
   const [reportFile, setReportFile] = useState<File | null>(null)
   const [reportDescription, setReportDescription] = useState('')
 
@@ -94,39 +116,60 @@ export function PatientProfilePage() {
     setError(null)
     setSuccess(null)
     try {
-      const [profileRes, reportsRes] = await Promise.all([
+      const [profileRes, reportsRes, apptsRes, prescRes] = await Promise.allSettled([
         api.get<PatientProfile>('/patients/me/profile'),
         api.get<MedicalReport[]>('/patients/me/reports'),
+        api.get<Appointment[]>('/appointments'),
+        api.get<Prescription[]>('/prescriptions/patient/me'),
       ])
 
-      setProfile(profileRes.data)
-      setFullName(profileRes.data.fullName)
-      setPhone(profileRes.data.phone)
-      setDateOfBirth(profileRes.data.dateOfBirth ?? '')
-      setAddress(profileRes.data.address ?? '')
-      setGender(profileRes.data.gender ?? '')
-      setEmergencyContactName(profileRes.data.emergencyContactName ?? '')
-      setEmergencyContactPhone(profileRes.data.emergencyContactPhone ?? '')
-
-      setReports(reportsRes.data)
-    } catch (err: any) {
-      // If profile doesn't exist yet, we still want reports to load.
-      const status = err?.response?.status
-      if (status === 404) {
-        try {
-          const reportsRes = await api.get<MedicalReport[]>('/patients/me/reports')
-          setReports(reportsRes.data)
-          setProfile(null)
-        } catch (err2: any) {
-          setError(formatApiError(err2, 'Failed to load your data'))
-        }
+      if (profileRes.status === 'fulfilled') {
+        setProfile(profileRes.value.data)
+        setFullName(profileRes.value.data.fullName)
+        setPhone(profileRes.value.data.phone)
+        setDateOfBirth(profileRes.value.data.dateOfBirth ?? '')
+        setAddress(profileRes.value.data.address ?? '')
+        setGender(profileRes.value.data.gender ?? '')
+        setEmergencyContactName(profileRes.value.data.emergencyContactName ?? '')
+        setEmergencyContactPhone(profileRes.value.data.emergencyContactPhone ?? '')
       } else {
-        setError(formatApiError(err, 'Failed to load your data'))
+        const status = (profileRes.reason as any)?.response?.status
+        if (status === 404) {
+          setProfile(null)
+        } else {
+          setError(formatApiError(profileRes.reason, 'Failed to load your profile'))
+        }
       }
+
+      if (reportsRes.status === 'fulfilled') setReports(reportsRes.value.data ?? [])
+      else setError((prev) => prev ?? formatApiError(reportsRes.reason, 'Failed to load your reports'))
+
+      if (apptsRes.status === 'fulfilled') setAppointments(apptsRes.value.data ?? [])
+      else setError((prev) => prev ?? formatApiError(apptsRes.reason, 'Failed to load your appointments'))
+
+      if (prescRes.status === 'fulfilled') setPrescriptions(prescRes.value.data ?? [])
+      else setError((prev) => prev ?? formatApiError(prescRes.reason, 'Failed to load your prescriptions'))
+    } catch (err: any) {
+      setError(formatApiError(err, 'Failed to load your data'))
     } finally {
       setLoading(false)
     }
   }
+
+  const timeline = useMemo(() => {
+    const items: Array<
+      | { kind: 'REPORT'; at: string; report: MedicalReport }
+      | { kind: 'APPOINTMENT'; at: string; appt: Appointment }
+      | { kind: 'PRESCRIPTION'; at: string; presc: Prescription }
+    > = []
+
+    for (const r of reports) items.push({ kind: 'REPORT', at: r.uploadedAt, report: r })
+    for (const a of appointments) items.push({ kind: 'APPOINTMENT', at: a.slotTime, appt: a })
+    for (const p of prescriptions) items.push({ kind: 'PRESCRIPTION', at: p.issuedAt, presc: p })
+
+    items.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+    return items
+  }, [appointments, prescriptions, reports])
 
   async function saveProfile() {
     setLoading(true)
@@ -202,8 +245,7 @@ export function PatientProfilePage() {
       setReportFile(null)
       setReportDescription('')
 
-      const reportsRes = await api.get<MedicalReport[]>('/patients/me/reports')
-      setReports(reportsRes.data)
+      await loadAll()
       setSuccess('Report uploaded')
     } catch (err: any) {
       setError(formatApiError(err, 'Failed to upload report'))
@@ -431,8 +473,98 @@ export function PatientProfilePage() {
       </Card>
 
       <Card>
-        <div className="text-xs text-slate-600">
-          Prescriptions and consultation history will appear here once the doctor/prescription workflow is enabled.
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold text-slate-900">Medical history timeline</div>
+            <div className="text-xs text-slate-500">Appointments, reports, and prescriptions in one place</div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge>{appointments.length} appointments</Badge>
+            <Badge>{reports.length} reports</Badge>
+            <Badge>{prescriptions.length} prescriptions</Badge>
+          </div>
+        </div>
+
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 text-xs text-slate-600">
+              <tr>
+                <th className="px-3 py-2 font-semibold">Type</th>
+                <th className="px-3 py-2 font-semibold">When</th>
+                <th className="px-3 py-2 font-semibold">Details</th>
+                <th className="px-3 py-2 font-semibold">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {timeline.map((t) => {
+                if (t.kind === 'REPORT') {
+                  const r = t.report
+                  return (
+                    <tr key={`report-${r.id}`} className="hover:bg-slate-50">
+                      <td className="px-3 py-3">
+                        <Badge>REPORT</Badge>
+                      </td>
+                      <td className="px-3 py-3 text-slate-700">{new Date(r.uploadedAt).toLocaleString()}</td>
+                      <td className="px-3 py-3 text-slate-700">
+                        <div className="font-medium text-slate-900">{r.fileName}</div>
+                        <div className="text-xs text-slate-600">{r.description ?? '—'} • {formatBytes(r.sizeBytes)}</div>
+                      </td>
+                      <td className="px-3 py-3">
+                        <Button variant="secondary" onClick={() => downloadReport(r)}>Download</Button>
+                      </td>
+                    </tr>
+                  )
+                }
+
+                if (t.kind === 'APPOINTMENT') {
+                  const a = t.appt
+                  return (
+                    <tr key={`appt-${a.id}`} className="hover:bg-slate-50">
+                      <td className="px-3 py-3">
+                        <Badge>APPOINTMENT</Badge>
+                      </td>
+                      <td className="px-3 py-3 text-slate-700">{new Date(a.slotTime).toLocaleString()}</td>
+                      <td className="px-3 py-3 text-slate-700">
+                        <div className="text-xs text-slate-600">Appointment #{a.id} • Doctor #{a.doctorId}</div>
+                        <div className="mt-1 flex flex-wrap gap-2">
+                          <Badge>{a.status}</Badge>
+                          <Badge>{a.appoinmentApproval ?? 'PENDING_APPROVAL'}</Badge>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="text-xs text-slate-500">—</span>
+                      </td>
+                    </tr>
+                  )
+                }
+
+                const p = t.presc
+                return (
+                  <tr key={`presc-${p.id}`} className="hover:bg-slate-50">
+                    <td className="px-3 py-3">
+                      <Badge>PRESCRIPTION</Badge>
+                    </td>
+                    <td className="px-3 py-3 text-slate-700">{new Date(p.issuedAt).toLocaleString()}</td>
+                    <td className="px-3 py-3 text-slate-700">
+                      <div className="text-xs text-slate-600">Prescription #{p.id} • Appointment {p.appointmentId ?? '—'}</div>
+                      <div className="mt-1 text-sm text-slate-900">{p.diagnosis?.trim() || 'Diagnosis not provided'}</div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="text-xs text-slate-500">See Prescriptions page</span>
+                    </td>
+                  </tr>
+                )
+              })}
+
+              {timeline.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-3 py-8 text-center text-slate-500">
+                    No medical history yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </Card>
     </div>

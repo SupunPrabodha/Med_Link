@@ -13,7 +13,7 @@ This repository contains a **marks-aligned, runnable microservices skeleton** de
 - Per-service data ownership (PostgreSQL per service)
 - Professional documentation, Swagger/OpenAPI, and tests
 
-> Note: The full product scope in `requirements.md` (telemedicine, AI symptom checker, etc.) is included as **architecture** and **extensible placeholders**. The runnable implementation focuses on core DS patterns + primary workflows (Auth + Doctor verification + Appointment + Payments + Notifications).
+> This repository implements the assignment’s core workflows end-to-end (through the gateway), including appointments, payments, telemedicine sessions, notifications, prescriptions, and an optional symptom checker. See `requirements.md` for requirement coverage and `scripts/smoke-test.ps1` for a repeatable proof run.
 
 Admin workflows implemented in UI (marker-friendly):
 - Doctor verification (approve/reject)
@@ -30,11 +30,16 @@ Admin workflows implemented in UI (marker-friendly):
 | `service-discovery` | 8761 | Eureka server for service registration |
 | `api-gateway` | 8090 | Entry point, routing, JWT validation + RBAC |
 | `auth-service` | 8081 | Register/login, issues JWT |
-| `patient-service` | 8086 | Patient profile + medical reports (upload/list/download/delete) |
-| `appointment-service` | 8082 | Appointment CRUD, publishes RabbitMQ events |
-| `notification-service` | 8083 | Consumes events, logs "email/SMS" notifications |
 | `doctor-service` | 8084 | Doctor onboarding + admin verification |
 | `payment-service` | 8085 | Payments: PayHere intent + callback, and Stripe Checkout + webhook (signature verification) |
+| `appointment-service` | 8082 | Appointment CRUD + SSE real-time status updates + event publishing |
+| `patient-service` | 8086 | Patient profile + medical reports (upload/list/download/delete) |
+| `telemedicine-service` | 8087 | Jitsi join URL provisioning + consultation completion |
+| `prescription-service` | 8088 | Doctor issues prescriptions; patient views prescriptions |
+| `notification-service` | 8083 | In-app notifications (persisted) + optional Email/SMS when configured |
+| `symptom-checker-service` | 8089 | Symptom triage + recommended specialties (+ optional ML inference) |
+| `ai-symptom-service` | 8010 | Optional FastAPI inference for symptom checker |
+| `frontend` | 5173 | React UI served via Nginx |
 
 ### Infrastructure (Docker)
 - PostgreSQL for Auth (`authdb`) on port `5432`
@@ -42,13 +47,17 @@ Admin workflows implemented in UI (marker-friendly):
 - PostgreSQL for Doctor (`doctordb`) on host port `5434`
 - PostgreSQL for Payments (`paymentdb`) on host port `5435`
 - PostgreSQL for Patient (`patientdb`) on host port `5436`
+- PostgreSQL for Telemedicine (`telemedicinedb`) on host port `5437`
+- PostgreSQL for Prescription (`prescriptiondb`) on host port `5438`
+- PostgreSQL for Notification (`notificationdb`) on host port `5439`
+- PostgreSQL for Symptom checker (`symptomdb`) on host port `5440`
 - RabbitMQ + Management UI on ports `5672` and `15672`
 
 ---
 
 ## ⚙️ Tech Stack
 
-- Java (project builds on **Java 17** in this environment; designed for **Java 21** per requirements)
+- Java 17
 - Spring Boot, Spring Cloud (Gateway, Eureka)
 - Spring Security (BCrypt password hashing)
 - JWT (jjwt)
@@ -106,7 +115,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke-test.ps1
 ```
 
 Notes:
-- By default the smoke test does **not** force Docker rebuilds (more stable on lab machines). To force rebuilds set `SMOKE_BUILD=1`.
+- By default the smoke test runs `docker compose up -d --build`.
+- To skip rebuilds (faster on lab machines), set `SMOKE_BUILD=0`.
 - Default payment provider is PayHere. To run in Stripe mode: set `SMOKE_PAYMENT_PROVIDER=stripe` and ensure `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` are available (in your shell env or in `.env`).
 - If you override `PAYHERE_MERCHANT_SECRET` for Compose, also set the same value when running the smoke test (so it can generate a valid `md5sig`).
 
@@ -182,12 +192,8 @@ This returns:
 ## 🔎 Swagger / OpenAPI
 
 - Gateway Swagger UI: http://localhost:8090/swagger
-- Auth Service OpenAPI: http://localhost:8081/swagger-ui/index.html
-- Add telemedicine-service (Jitsi meeting provisioning)
-- Add patient profile/report upload service
-- Add prescriptions service
-- Add AI symptom checker service
-- Persist notification logs + audit trail
+
+For marking/demo, prefer the Gateway Swagger since it exercises routing + RBAC through the gateway.
 
 ---
 
@@ -229,8 +235,8 @@ See `k8s/README.md`.
 
 - Microservices + API Gateway + Eureka: ✅
 - JWT authentication + RBAC: ✅ (enforced at gateway; BCrypt in auth)
-- RabbitMQ async events: ✅ (appointment.created/cancelled)
-- PostgreSQL per service: ✅ (separate auth + appointment DBs)
+- RabbitMQ async events: ✅ (event-driven confirmations/notifications across core workflows)
+- PostgreSQL per service: ✅ (auth + patient + doctor + appointment + payment + telemedicine + prescription + notification + symptom)
 - Docker Compose: ✅
 - Kubernetes manifests (Deployments, Services, ConfigMaps, Secrets, Ingress): ✅
 - Swagger API specs: ✅
@@ -238,12 +244,11 @@ See `k8s/README.md`.
 
 ---
 
-## Next Steps (optional to expand)
+## Optional Enhancements
 
-- Add `doctor-service` and availability search
-- Add `payment-service` (PayHere sandbox webhook)
-- Add `telemedicine-service` (Jitsi meeting provisioning)
-- Add notification persistence and real email provider integration
+- Validate real Email/SMS delivery by configuring Brevo/Twilio env vars
+- Stripe end-to-end demo (webhook secret + test events)
+- Deploy on Kubernetes with ingress and show probes/health in the demo
 
 ---
 
@@ -261,7 +266,7 @@ If you see an error like `open //./pipe/dockerDesktopLinuxEngine: The system can
 ### Docker BuildKit / IO errors during rebuild
 
 If Docker Desktop is unstable (500 errors / I/O errors), avoid forcing rebuilds:
-- Run `scripts/smoke-test.ps1` without `SMOKE_BUILD=1`.
+- Run `scripts/smoke-test.ps1` with `SMOKE_BUILD=0`.
 - If you must rebuild, try restarting Docker Desktop and running `docker builder prune`.
 
 ## 🌐 Live Hosting (minimal guide)

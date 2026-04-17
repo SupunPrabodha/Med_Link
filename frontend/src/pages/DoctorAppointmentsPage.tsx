@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
+import { connectSse } from '../lib/sse'
 import { Badge, Button, Card, Label } from '../ui/primitives'
 
 type DoctorAppointmentRow = {
@@ -23,6 +24,8 @@ export function DoctorAppointmentsPage() {
     const [joiningId, setJoiningId] = useState<number | null>(null)
     const [completingId, setCompletingId] = useState<number | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
+
+    const sseRef = useRef<{ close: () => void } | null>(null)
 
     async function load() {
         setLoading(true)
@@ -49,11 +52,32 @@ export function DoctorAppointmentsPage() {
     }, [])
 
     useEffect(() => {
-        const id = window.setInterval(() => {
-            void load()
-        }, 10_000)
-        return () => window.clearInterval(id)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        const token = localStorage.getItem('medilink.token')
+        if (!token) return
+
+        sseRef.current?.close()
+        sseRef.current = connectSse('/appointments/doctor/me/stream', token, {
+            onEvent: (evt) => {
+                if (evt.event !== 'appointment') return
+                try {
+                    const appt = JSON.parse(evt.data) as DoctorAppointmentRow
+                    setRows((prev) => {
+                        const idx = prev.findIndex((r) => r.id === appt.id)
+                        const next = idx === -1 ? [...prev, appt] : prev.map((r) => (r.id === appt.id ? appt : r))
+                        next.sort((a, b) => new Date(a.slotTime).getTime() - new Date(b.slotTime).getTime())
+                        return next
+                    })
+                } catch {
+                    // ignore
+                }
+            },
+            reconnectMs: 1500,
+        })
+
+        return () => {
+            sseRef.current?.close()
+            sseRef.current = null
+        }
     }, [])
 
     async function updateApproval(appointmentId: number, appoinmentApproval: 'APPROVED' | 'DECLINED') {

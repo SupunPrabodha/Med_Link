@@ -22,6 +22,22 @@ spec:
           env:
             - name: SERVER_PORT
               value: "8761"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8761
+            initialDelaySeconds: 40
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8761
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
 ---
 apiVersion: v1
 kind: Service
@@ -89,6 +105,22 @@ spec:
                 secretKeyRef:
                   name: medilink-secrets
                   key: AUTH_DB_PASS
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 40
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
 ---
 apiVersion: v1
 kind: Service
@@ -155,6 +187,22 @@ spec:
                 secretKeyRef:
                   name: medilink-secrets
                   key: APPT_DB_PASS
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 40
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
 ---
 apiVersion: v1
 kind: Service
@@ -258,6 +306,22 @@ spec:
                 secretKeyRef:
                   name: medilink-secrets
                   key: TWILIO_FROM_NUMBER
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8083
+            initialDelaySeconds: 40
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8083
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
 ---
 apiVersion: v1
 kind: Service
@@ -305,6 +369,22 @@ spec:
                 secretKeyRef:
                   name: medilink-secrets
                   key: JWT_SECRET
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8090
+            initialDelaySeconds: 40
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8090
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
 ---
 apiVersion: v1
 kind: Service
@@ -372,6 +452,22 @@ spec:
                 secretKeyRef:
                   name: medilink-secrets
                   key: PATIENT_DB_PASS
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8086
+            initialDelaySeconds: 40
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8086
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
 ---
 apiVersion: v1
 kind: Service
@@ -444,6 +540,22 @@ spec:
                 secretKeyRef:
                   name: medilink-secrets
                   key: DOCTOR_DB_PASS
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8084
+            initialDelaySeconds: 40
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8084
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
 ---
 apiVersion: v1
 kind: Service
@@ -534,6 +646,22 @@ spec:
                 secretKeyRef:
                   name: medilink-secrets
                   key: STRIPE_WEBHOOK_SECRET
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8085
+            initialDelaySeconds: 40
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8085
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
 ---
 apiVersion: v1
 kind: Service
@@ -591,6 +719,22 @@ spec:
                 secretKeyRef:
                   name: medilink-secrets
                   key: PRESCRIPTION_DB_PASS
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8088
+            initialDelaySeconds: 40
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8088
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
 ---
 apiVersion: v1
 kind: Service
@@ -660,6 +804,22 @@ spec:
                 secretKeyRef:
                   name: medilink-secrets
                   key: TELEMEDICINE_DB_PASS
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8087
+            initialDelaySeconds: 40
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8087
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
 ---
 apiVersion: v1
 kind: Service
@@ -737,6 +897,22 @@ spec:
                 secretKeyRef:
                   name: medilink-secrets
                   key: SYMPTOM_DB_PASS
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8089
+            initialDelaySeconds: 40
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8089
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
 ---
 apiVersion: v1
 kind: Service
@@ -833,6 +1009,22 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
 ---
 apiVersion: v1
 kind: Service

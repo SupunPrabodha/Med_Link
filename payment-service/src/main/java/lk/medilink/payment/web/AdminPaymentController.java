@@ -26,4 +26,28 @@ public class AdminPaymentController {
 				.filter(p -> status == null || status == p.getStatus())
 				.toList();
 	}
+
+	public record AdminNoteRequest(String note) {
+	}
+
+	@PostMapping("/{paymentId}/review")
+	public Payment review(@RequestHeader("X-User-Id") Long adminUserId,
+	                      @PathVariable("paymentId") Long paymentId,
+	                      @RequestBody(required = false) AdminNoteRequest req) {
+		return service.reviewPayment(paymentId, adminUserId, req == null ? null : req.note());
+	}
+
+	@PostMapping("/{paymentId}/dispute")
+	public Payment dispute(@RequestHeader("X-User-Id") Long adminUserId,
+	                       @PathVariable("paymentId") Long paymentId,
+	                       @RequestBody(required = false) AdminNoteRequest req) {
+		return service.flagPaymentDispute(paymentId, adminUserId, req == null ? null : req.note());
+	}
+
+	@PostMapping("/{paymentId}/refund")
+	public Payment refund(@RequestHeader("X-User-Id") Long adminUserId,
+	                      @PathVariable("paymentId") Long paymentId,
+	                      @RequestBody(required = false) AdminNoteRequest req) {
+		return service.refundPayment(paymentId, adminUserId, req == null ? null : req.note());
+	}
 }
