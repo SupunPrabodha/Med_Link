@@ -1,0 +1,7 @@
+{
+  "migraine": ["Neurology"],
+  "influenza": ["General Medicine", "ENT"],
+  "common cold": ["General Medicine", "ENT"],
+  "heart attack": ["Emergency Medicine", "Cardiology"],
+  "food poisoning": ["General Medicine", "Gastroenterology"]
+}

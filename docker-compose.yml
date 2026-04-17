@@ -143,6 +143,23 @@ services:
       timeout: 5s
       retries: 20
 
+  ai-symptom-service:
+    build:
+      context: ./ai-symptom-service
+      dockerfile: Dockerfile
+    image: medilink/ai-symptom-service:0.1.0
+    ports:
+      - "8010:8000"
+    environment:
+      AI_API_KEY: "${AI_SYMPTOM_API_KEY:-}"
+      AI_MODEL_PATH: "${AI_SYMPTOM_MODEL_PATH:-/models/model.joblib}"
+      AI_MODEL_VERSION: "${AI_SYMPTOM_MODEL_VERSION:-dev}"
+      AI_DATASET_NAME: "${AI_SYMPTOM_DATASET_NAME:-}"
+      AI_OUTPUT_KIND: "${AI_SYMPTOM_OUTPUT_KIND:-specialty}"
+      AI_DISEASE_TO_SPECIALTY_PATH: "${AI_SYMPTOM_DISEASE_MAP_PATH:-/models/disease_to_specialty.json}"
+    volumes:
+      - ai_symptom_models:/models
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -397,11 +414,17 @@ services:
       SPRING_DATASOURCE_URL: "${SYMPTOM_DB_URL:-jdbc:postgresql://postgres-symptom:5432/symptomdb}"
       SPRING_DATASOURCE_USERNAME: "${SYMPTOM_DB_USER:-symptom}"
       SPRING_DATASOURCE_PASSWORD: "${SYMPTOM_DB_PASS:-symptom}"
+      APP_AI_ENABLED: "${AI_SYMPTOM_ENABLED:-false}"
+      APP_AI_BASE_URL: "${AI_SYMPTOM_BASE_URL:-http://ai-symptom-service:8000}"
+      APP_AI_API_KEY: "${AI_SYMPTOM_API_KEY:-}"
+      APP_AI_MODEL: "${AI_SYMPTOM_MODEL:-}"
     depends_on:
       service-discovery:
         condition: service_started
       postgres-symptom:
         condition: service_healthy
+      ai-symptom-service:
+        condition: service_started
 
   api-gateway:
     build:
@@ -462,3 +485,4 @@ volumes:
   pg_notification_data:
   pg_symptom_data:
   rabbitmq_data:
+  ai_symptom_models:
