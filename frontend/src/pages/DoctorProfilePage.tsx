@@ -197,11 +197,6 @@ export function DoctorProfilePage() {
   async function uploadPhoto() {
     setError(null)
     setSuccess(null)
-
-    if (!profile) {
-      setError('Create your profile first')
-      return
-    }
     if (!photoFile) {
       setError('Please choose an image')
       return
@@ -209,6 +204,43 @@ export function DoctorProfilePage() {
     if (photoFile.size > 2 * 1024 * 1024) {
       setError('Photo must be 2MB or less')
       return
+    }
+
+    if (!profile) {
+      if (!fullName.trim() || !registrationNo.trim() || !specialization.trim()) {
+        setError('Please fill in your name, registration no and specialization, then try uploading again')
+        return
+      }
+
+      const years = yearsOfExperience.trim() ? Number.parseInt(yearsOfExperience.trim(), 10) : null
+      if (years != null && (!Number.isFinite(years) || years < 0)) {
+        setError('Years of experience must be a non-negative number')
+        return
+      }
+
+      const fee = consultationFeeLkr.trim() ? Number.parseInt(consultationFeeLkr.trim(), 10) : null
+      if (fee != null && (!Number.isFinite(fee) || fee < 0)) {
+        setError('Consultation fee must be a non-negative number')
+        return
+      }
+
+      try {
+        const res = await api.post<DoctorProfile>('/doctors/me/profile', {
+          fullName: fullName.trim(),
+          phone: phone.trim() ? phone.trim() : null,
+          registrationNo: registrationNo.trim(),
+          specialization: specialization.trim(),
+          documentsUrl: documentsUrl.trim() ? documentsUrl.trim() : null,
+          bio: bio.trim() ? bio.trim() : null,
+          yearsOfExperience: years,
+          consultationFeeLkr: fee,
+          clinicAddress: clinicAddress.trim() ? clinicAddress.trim() : null,
+        })
+        setProfile(res.data)
+      } catch (err: any) {
+        setError(formatApiError(err, 'Failed to save profile before uploading photo'))
+        return
+      }
     }
 
     setPhotoUploading(true)
@@ -312,14 +344,14 @@ export function DoctorProfilePage() {
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
                 onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
-                disabled={loading || photoUploading || !profile}
+                disabled={loading || photoUploading}
               />
-              <Button variant="secondary" onClick={uploadPhoto} disabled={loading || photoUploading || !profile || !photoFile}>
+              <Button variant="secondary" onClick={uploadPhoto} disabled={loading || photoUploading || !photoFile}>
                 {photoUploading ? 'Uploading…' : 'Upload'}
               </Button>
               <Badge>Max 2MB</Badge>
             </div>
-            {!profile && <div className="mt-1 text-xs text-slate-500">Save your profile first to enable photo upload.</div>}
+            {!profile && <div className="mt-1 text-xs text-slate-500">Tip: Upload will auto-save your profile first.</div>}
           </div>
         </div>
 

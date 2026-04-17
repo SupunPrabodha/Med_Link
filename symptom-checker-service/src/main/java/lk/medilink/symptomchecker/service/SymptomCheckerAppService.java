@@ -145,9 +145,9 @@ public class SymptomCheckerAppService {
 		if (emergency) {
 			return new TriageResult(
 					"EMERGENCY",
-					"Some symptoms you entered can be urgent.",
-					"If you are in immediate danger or symptoms are severe/worsening, call local emergency services now. " +
-							"If unsure, seek urgent medical care immediately. This tool does not provide a diagnosis."
+					"The symptoms you described may require urgent medical attention.",
+					"If you feel unsafe, your symptoms are severe, or they are rapidly worsening, call your local emergency number now. " +
+							"If you are unsure, seek urgent medical care promptly. This tool provides educational information only and does not provide a diagnosis."
 			);
 		}
 
@@ -167,19 +167,19 @@ public class SymptomCheckerAppService {
 		else risk = "LOW";
 
 		String summary = switch (risk) {
-			case "HIGH" -> "Your symptoms may need prompt medical attention.";
-			case "MEDIUM" -> "Your symptoms may need medical advice if they persist or worsen.";
-			default -> "Your symptoms sound mild based on what you entered.";
+			case "HIGH" -> "Based on the information provided, your symptoms may warrant prompt clinical assessment.";
+			case "MEDIUM" -> "Based on the information provided, your symptoms may warrant medical advice if they persist or worsen.";
+			default -> "Based on what you entered, your symptoms appear mild at this time.";
 		};
 
 		String advice = switch (risk) {
 			case "HIGH" -> "Consider seeking medical care today, especially if symptoms are worsening, you feel very unwell, " +
-						"or you have underlying conditions. If you develop chest pain, severe shortness of breath, confusion, " +
-						"fainting, or severe bleeding, seek emergency care immediately. This tool does not provide a diagnosis.";
-			case "MEDIUM" -> "Monitor symptoms, rest, and stay hydrated. If symptoms last more than a few days, worsen, " +
-						"or you develop severe symptoms, seek medical advice. This tool does not provide a diagnosis.";
+						"or you have significant underlying conditions. If you develop chest pain, severe breathing trouble, confusion, " +
+						"fainting, or severe bleeding, seek emergency care immediately. This tool provides educational information only and does not provide a diagnosis.";
+			case "MEDIUM" -> "Rest, stay hydrated, and monitor your symptoms. If symptoms last more than a few days, worsen, " +
+						"or new concerning symptoms develop, seek medical advice. This tool provides educational information only and does not provide a diagnosis.";
 			default -> "If symptoms persist, worsen, or you are concerned, consult a clinician. If severe symptoms appear, seek urgent care. " +
-						"This tool does not provide a diagnosis.";
+						"This tool provides educational information only and does not provide a diagnosis.";
 		};
 
 		return new TriageResult(risk, summary, advice);

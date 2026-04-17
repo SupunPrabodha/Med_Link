@@ -354,6 +354,15 @@ public class DoctorAppService {
 		return repo.findTop20ByStatusNotOrderByUpdatedAtDesc(VerificationStatus.PENDING);
 	}
 
+	@Transactional
+	public void adminDeleteDoctor(Long doctorId, Long adminUserId) {
+		// adminUserId is currently used only for audit consistency at the API layer.
+		// Authorization is enforced at the gateway.
+		ensureDoctorExists(doctorId);
+		availabilityRepo.deleteByDoctorId(doctorId);
+		repo.deleteById(doctorId);
+	}
+
 	private static String normalizeToE164(String raw) {
 		if (raw == null) return null;
 		String s = raw.trim();

@@ -1,6 +1,6 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { hasRole, useAuth } from '../context/AuthContext'
-import { cn } from '../ui/primitives'
+import { Button, cn } from '../ui/primitives'
 import { Home, Bell, Stethoscope, User, Pill, Bot, Calendar, CreditCard, Users, CheckCircle, Lock, Shield, LogOut } from 'lucide-react'
 
 type NavItem = {
@@ -199,6 +199,18 @@ export function AppShell() {
             <Outlet />
           </div>
         </main>
+
+        {hasRole(user, 'PATIENT') && !loc.pathname.startsWith('/app/patient/symptoms') && (
+          <Button
+            type="button"
+            onClick={() => nav('/app/patient/symptoms')}
+            className="fixed bottom-6 right-6 z-50 h-12 w-12 rounded-full px-0"
+            title="AI Symptom Checker"
+            aria-label="Open AI Symptom Checker"
+          >
+            <Bot className="h-5 w-5" />
+          </Button>
+        )}
 
       </div>
     </div>

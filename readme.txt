@@ -35,6 +35,30 @@ Prerequisites
 
 2) Run on Kubernetes
 
+Docker Desktop Kubernetes (Windows)
+- Enable Kubernetes in Docker Desktop: Settings → Kubernetes → Enable Kubernetes.
+- Confirm context:
+  kubectl config get-contexts
+  kubectl config use-context docker-desktop
+  kubectl cluster-info
+
+- Deploy manifests:
+  kubectl apply -f k8s/namespace.yml
+  kubectl apply -f k8s/configmap.yml
+  kubectl apply -f k8s/secrets.yml
+  kubectl apply -f k8s/postgres.yml
+  kubectl apply -f k8s/rabbitmq.yml
+  kubectl apply -f k8s/apps.yml
+
+- Wait for pods:
+  kubectl get pods -n medilink
+
+- Access without ingress (recommended):
+  kubectl -n medilink port-forward svc/frontend 8080:80
+  kubectl -n medilink port-forward svc/api-gateway 8090:8090
+
+- Optional ingress: apply k8s/ingress.yml after installing an ingress controller.
+
 2.1 Create namespace
 - Apply namespace manifest:
   kubectl apply -f k8s/namespace.yml

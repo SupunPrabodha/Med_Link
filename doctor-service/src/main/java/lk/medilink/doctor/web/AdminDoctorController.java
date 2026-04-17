@@ -39,4 +39,10 @@ public class AdminDoctorController {
 	                           @Valid @RequestBody RejectDoctorRequest req) {
 		return service.reject(doctorId, adminUserId, req.reason());
 	}
+
+	@DeleteMapping("/{doctorId}")
+	public void deleteDoctor(@RequestHeader("X-User-Id") Long adminUserId,
+	                         @PathVariable("doctorId") Long doctorId) {
+		service.adminDeleteDoctor(doctorId, adminUserId);
+	}
 }

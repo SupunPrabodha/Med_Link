@@ -231,7 +231,7 @@ export function SymptomCheckerPage() {
                         ))}
                       </div>
                     ) : (
-                      <span className="text-xs text-slate-500">-</span>
+                      <span className="text-xs text-slate-500">Not available</span>
                     )}
                   </td>
                 </tr>

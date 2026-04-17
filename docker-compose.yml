@@ -241,6 +241,7 @@ services:
       args:
         MODULE: doctor-service
     image: medilink/doctor-service:0.1.0
+    restart: unless-stopped
     ports:
       - "8084:8084"
     environment:

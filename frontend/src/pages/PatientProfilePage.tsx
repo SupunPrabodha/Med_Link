@@ -199,11 +199,6 @@ export function PatientProfilePage() {
   async function uploadPhoto() {
     setError(null)
     setSuccess(null)
-
-    if (!profile) {
-      setError('Create your profile first')
-      return
-    }
     if (!photoFile) {
       setError('Please choose an image')
       return
@@ -211,6 +206,30 @@ export function PatientProfilePage() {
     if (photoFile.size > 2 * 1024 * 1024) {
       setError('Photo must be 2MB or less')
       return
+    }
+
+    if (!profile) {
+      if (!fullName.trim() || !phone.trim()) {
+        setError('Please fill in your name and phone, then try uploading again')
+        return
+      }
+
+      try {
+        const payload = {
+          fullName: fullName.trim(),
+          phone: phone.trim(),
+          dateOfBirth: dateOfBirth.trim() ? dateOfBirth.trim() : null,
+          address: address.trim() ? address.trim() : null,
+          gender: gender.trim() ? gender.trim() : null,
+          emergencyContactName: emergencyContactName.trim() ? emergencyContactName.trim() : null,
+          emergencyContactPhone: emergencyContactPhone.trim() ? emergencyContactPhone.trim() : null,
+        }
+        const res = await api.post<PatientProfile>('/patients/me/profile', payload)
+        setProfile(res.data)
+      } catch (err: any) {
+        setError(formatApiError(err, 'Failed to save profile before uploading photo'))
+        return
+      }
     }
 
     setPhotoUploading(true)
@@ -316,14 +335,14 @@ export function PatientProfilePage() {
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
                 onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
-                disabled={loading || photoUploading || !profile}
+                disabled={loading || photoUploading}
               />
-              <Button variant="secondary" onClick={uploadPhoto} disabled={loading || photoUploading || !profile || !photoFile}>
+              <Button variant="secondary" onClick={uploadPhoto} disabled={loading || photoUploading || !photoFile}>
                 {photoUploading ? 'Uploading…' : 'Upload'}
               </Button>
               <Badge>Max 2MB</Badge>
             </div>
-            {!profile && <div className="mt-1 text-xs text-slate-500">Save your profile first to enable photo upload.</div>}
+            {!profile && <div className="mt-1 text-xs text-slate-500">Tip: Upload will auto-save your profile first.</div>}
           </div>
         </div>
 

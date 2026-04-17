@@ -2,25 +2,25 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { formatApiError } from '../lib/formatApiError'
+import { useToast } from '../ui/toast'
 
 export function LoginPage() {
   const { login } = useAuth()
   const nav = useNavigate()
+  const toast = useToast()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    setError(null)
     try {
       await login(email, password)
       nav('/app/dashboard')
     } catch (err: any) {
-      setError(formatApiError(err, 'Invalid email or password'))
+      toast.error(formatApiError(err, 'Invalid email or password'))
     } finally {
       setLoading(false)
     }
@@ -94,12 +94,6 @@ export function LoginPage() {
               <h2 className="text-2xl font-bold text-slate-900">Welcome back</h2>
               <p className="mt-1.5 text-sm text-slate-500">Sign in to your MediLink account</p>
             </div>
-
-            {error && (
-              <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {error}
-              </div>
-            )}
 
             <form onSubmit={submit} className="space-y-5">
               <div>

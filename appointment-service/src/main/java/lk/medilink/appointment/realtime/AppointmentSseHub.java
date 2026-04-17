@@ -42,9 +42,21 @@ public class AppointmentSseHub {
 		if (appt == null || appt.getId() == null) {
 			return;
 		}
-		publishToSet(patientEmitters.get(appt.getPatientId()), appt);
-		publishToSet(doctorEmitters.get(appt.getDoctorId()), appt);
-		publishToSet(adminEmitters, appt);
+		try {
+			publishToSet(patientEmitters.get(appt.getPatientId()), appt);
+		} catch (Exception ex) {
+			log.debug("SSE publish to patient failed: {}", ex.getMessage());
+		}
+		try {
+			publishToSet(doctorEmitters.get(appt.getDoctorId()), appt);
+		} catch (Exception ex) {
+			log.debug("SSE publish to doctor failed: {}", ex.getMessage());
+		}
+		try {
+			publishToSet(adminEmitters, appt);
+		} catch (Exception ex) {
+			log.debug("SSE publish to admin failed: {}", ex.getMessage());
+		}
 	}
 
 	private SseEmitter register(Map<Long, Set<SseEmitter>> map, Long key, String kind) {
@@ -94,8 +106,13 @@ public class AppointmentSseHub {
 		for (SseEmitter emitter : emitters) {
 			try {
 				emitter.send(event);
-			} catch (IOException ex) {
-				emitter.complete();
+			} catch (Exception ex) {
+				emitters.remove(emitter);
+				try {
+					emitter.complete();
+				} catch (Exception ignored) {
+					// ignore
+				}
 			}
 		}
 	}
