@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { User } from 'lucide-react'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Alert, Badge, Button, Card, Input, Label, Select } from '../ui/primitives'
+import { Alert, Badge, Button, Card, Input, Label, Select, PageHeader } from '../ui/primitives'
 
 type PatientProfile = {
   id: number
@@ -285,21 +286,22 @@ export function PatientProfilePage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold text-slate-900">My profile</div>
-            <div className="text-xs text-slate-500">Manage your patient details and medical reports</div>
-          </div>
-          <div className="flex items-center gap-2">
-            {profile && <Badge className="font-mono">Account #{profile.userId}</Badge>}
+      <PageHeader
+        icon={<User className="h-6 w-6 text-white" />}
+        title="My Profile"
+        description="Manage your patient details and medical reports"
+        actions={
+          <>
+            {profile && <Badge className="border-sky-300/30 bg-sky-400/20 text-sky-200">Account #{profile.userId}</Badge>}
             <Button variant="secondary" onClick={loadAll} disabled={loading}>
-              {loading ? 'Loading…' : 'Refresh'}
+              {loading ? 'Refreshing…' : 'Refresh'}
             </Button>
-          </div>
-        </div>
+          </>
+        }
+      />
 
-        <div className="mt-4 flex flex-wrap items-center gap-4">
+      <Card>
+        <div className="mt-2 flex flex-wrap items-center gap-4">
           <div className="h-16 w-16 overflow-hidden rounded-full border border-slate-200 bg-slate-50">
             {profile?.profilePhotoUrl ? (
               <img src={profile.profilePhotoUrl} alt="Profile" className="h-full w-full object-cover" />

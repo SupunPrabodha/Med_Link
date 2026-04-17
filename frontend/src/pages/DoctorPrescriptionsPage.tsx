@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Pill } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Alert, Badge, Button, Card, Input, Label, Textarea } from '../ui/primitives'
+import { Alert, Badge, Button, Card, Input, Label, Textarea, PageHeader } from '../ui/primitives'
 
 type Prescription = {
   id: number
@@ -85,8 +86,13 @@ export function DoctorPrescriptionsPage() {
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        icon={<Pill className="h-6 w-6 text-white" />}
+        title="Issue Prescription"
+        description="Prescribe medications to your patients securely."
+      />
+
       <Card>
-        <div className="text-sm font-semibold text-slate-900">Issue Digital Prescription</div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div>
             <Label>Patient User ID</Label>

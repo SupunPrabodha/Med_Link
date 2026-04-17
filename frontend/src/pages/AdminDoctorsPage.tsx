@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { CheckCircle } from 'lucide-react'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Alert, Badge, Button, Card, Input, Label } from '../ui/primitives'
+import { Alert, Badge, Button, Card, Input, Label, PageHeader } from '../ui/primitives'
 
 type DoctorProfile = {
   id: number
@@ -69,22 +70,19 @@ export function AdminDoctorsPage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold text-slate-900">Doctor verification</div>
-            <div className="text-xs text-slate-500">Admin-only workflow</div>
-          </div>
+      <PageHeader
+        icon={<CheckCircle className="h-6 w-6 text-white" />}
+        title="Doctor Verification"
+        description="Admin-only workflow"
+        actions={
           <Button variant="secondary" onClick={load} disabled={loading}>
-            {loading ? 'Loading…' : 'Refresh'}
+            {loading ? 'Refreshing…' : 'Refresh'}
           </Button>
-        </div>
-        {error && (
-          <div className="mt-4">
-            <Alert tone="error">{error}</Alert>
-          </div>
-        )}
-      </Card>
+        }
+      />
+      {error && (
+        <Alert tone="error">{error}</Alert>
+      )}
 
       <Card>
         <div className="overflow-x-auto">

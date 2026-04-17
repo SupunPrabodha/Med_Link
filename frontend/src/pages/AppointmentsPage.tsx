@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import { Calendar } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { hasRole, useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
 import { connectSse } from '../lib/sse'
-import { Alert, Badge, Button, Card, Label, Select } from '../ui/primitives'
+import { Alert, Badge, Button, Card, Label, Select, PageHeader } from '../ui/primitives'
 
 type DoctorOption = {
   id: number
@@ -23,6 +25,7 @@ type Appointment = {
 
 export function AppointmentsPage() {
   const { user } = useAuth()
+  const nav = useNavigate()
   const isAdmin = hasRole(user, 'ADMIN')
 
   const sseRef = useRef<{ close: () => void } | null>(null)
@@ -122,19 +125,11 @@ export function AppointmentsPage() {
     setError(null)
     setJoiningId(appointmentId)
     try {
-      const res = await api.get<{ joinUrl: string }>(`/telemedicine/sessions/appointment/${appointmentId}`)
-      const url = res.data?.joinUrl
-      if (!url) {
-        setError('Telemedicine session is not ready yet. Please try again in a moment.')
-        return
-      }
-
-      const opened = window.open(url, '_blank', 'noopener,noreferrer')
-      if (!opened) {
-        window.location.href = url
-      }
+      // Verify the session exists before navigating
+      await api.get<{ joinUrl: string }>(`/telemedicine/sessions/appointment/${appointmentId}`)
+      nav(`/app/telemedicine/${appointmentId}`)
     } catch (err: any) {
-      setError(formatApiError(err, 'Failed to open video session'))
+      setError(formatApiError(err, 'Telemedicine session is not ready yet. Please try again in a moment.'))
     } finally {
       setJoiningId(null)
     }
@@ -194,19 +189,18 @@ export function AppointmentsPage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold text-slate-900">Appointments</div>
-            <div className="text-xs text-slate-500">
-              {isAdmin ? 'Admin view: manage platform appointments' : 'Create and manage patient appointments'}
-            </div>
-          </div>
+      <PageHeader
+        icon={<Calendar className="h-6 w-6 text-white" />}
+        title="Appointments"
+        description={isAdmin ? 'Admin view: manage platform appointments' : 'Create and manage patient appointments'}
+        actions={
           <Button variant="secondary" onClick={refresh} disabled={loading}>
-            {loading ? 'Loading…' : 'Refresh'}
+            {loading ? 'Refreshing…' : 'Refresh'}
           </Button>
-        </div>
+        }
+      />
 
+      <Card>
         {!isAdmin && (
           <div className="mt-4 grid gap-4 md:grid-cols-3">
             <div>

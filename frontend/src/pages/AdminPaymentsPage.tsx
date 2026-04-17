@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { CreditCard } from 'lucide-react'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Alert, Badge, Button, Card, Input, Label, Select } from '../ui/primitives'
+import { Alert, Badge, Button, Card, Input, Label, Select, PageHeader } from '../ui/primitives'
 
 type PaymentStatus = 'PENDING' | 'COMPLETED' | 'FAILED'
 
@@ -103,18 +104,19 @@ export function AdminPaymentsPage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold text-slate-900">Payments</div>
-            <div className="text-xs text-slate-500">Admin view: all patient payments</div>
-          </div>
+      <PageHeader
+        icon={<CreditCard className="h-6 w-6 text-white" />}
+        title="Payments Administration"
+        description="Admin view: all patient payments and resolutions"
+        actions={
           <Button variant="secondary" onClick={refresh} disabled={loading}>
-            {loading ? 'Loading…' : 'Refresh'}
+            {loading ? 'Refreshing…' : 'Refresh'}
           </Button>
-        </div>
+        }
+      />
 
-        <div className="mt-4 grid gap-4 md:grid-cols-3">
+      <Card>
+        <div className="grid gap-4 md:grid-cols-3">
           <div>
             <Label>Filter: Patient ID</Label>
             <div className="mt-1">

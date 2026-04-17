@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Badge, Button, Card } from '../ui/primitives'
+import { Badge, Button, Card, PageHeader } from '../ui/primitives'
 
 type MedicalReport = {
     id: number
@@ -84,18 +85,18 @@ export function DoctorPatientsPage() {
 
     return (
         <div className="space-y-6">
-            <Card>
-                <div className="flex flex-wrap items-end justify-between gap-3">
-                    <div>
-                        <div className="text-sm font-semibold text-slate-900">Patients</div>
-                        <div className="text-xs text-slate-500">Patients with at least one CONFIRMED appointment for you.</div>
-                    </div>
+            <PageHeader
+                icon={<Users className="h-6 w-6 text-white" />}
+                title="Patients"
+                description="Patients with at least one CONFIRMED appointment for you."
+                actions={
                     <Button variant="secondary" onClick={load} disabled={loading}>
-                        {loading ? 'Loading…' : 'Refresh'}
+                        {loading ? 'Refreshing…' : 'Refresh'}
                     </Button>
-                </div>
-                {error && <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error}</div>}
-            </Card>
+                }
+            />
+
+            {error && <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 font-medium shadow-sm">{error}</div>}
 
             <div className="space-y-3">
                 {rows.map((p) => (

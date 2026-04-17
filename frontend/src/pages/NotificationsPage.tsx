@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Bell } from 'lucide-react'
 import { hasRole, useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Alert, Badge, Button, Card, Select } from '../ui/primitives'
+import { Alert, Badge, Button, Card, Select, PageHeader } from '../ui/primitives'
 
 type NotificationRow = {
   id: string
@@ -53,40 +54,38 @@ export function NotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold text-slate-900">Notifications</div>
-            <div className="text-xs text-slate-500">Updates from appointments, payments, and verification</div>
-          </div>
+      <PageHeader
+        icon={<Bell className="h-6 w-6 text-white" />}
+        title="Notifications"
+        description="Updates from appointments, payments, and verification"
+        actions={
           <div className="flex items-end gap-2">
             {isAdmin && (
               <div className="min-w-[180px]">
                 <Select
                   value={scope}
-                  onChange={(e) => {
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                     const next = e.target.value as Scope
                     setScope(next)
                     void refresh(next)
                   }}
+                  className="border-sky-200/50 bg-white/20 text-white"
                 >
-                  <option value="mine">My notifications</option>
-                  <option value="all">All notifications</option>
+                  <option value="mine" className="text-slate-900">My notifications</option>
+                  <option value="all" className="text-slate-900">All notifications</option>
                 </Select>
               </div>
             )}
             <Button variant="secondary" onClick={() => refresh()} disabled={loading}>
-              {loading ? 'Loading…' : 'Refresh'}
+              {loading ? 'Refreshing…' : 'Refresh'}
             </Button>
           </div>
-        </div>
+        }
+      />
 
-        {error && (
-          <div className="mt-4">
-            <Alert tone="error">{error}</Alert>
-          </div>
-        )}
-      </Card>
+      {error && (
+        <Alert tone="error">{error}</Alert>
+      )}
 
       <Card>
         <div className="overflow-x-auto">

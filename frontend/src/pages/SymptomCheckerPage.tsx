@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Bot } from 'lucide-react'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Alert, Badge, Button, Card, Input, Label, Textarea, cn } from '../ui/primitives'
+import { Alert, Badge, Button, Card, Input, Label, Textarea, cn, PageHeader } from '../ui/primitives'
 
 type SymptomAssessment = {
   id: number
@@ -84,13 +85,19 @@ export function SymptomCheckerPage() {
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        icon={<Bot className="h-6 w-6 text-white" />}
+        title="AI Symptom Checker"
+        description="Get an AI preliminary assessment based on your symptoms."
+      />
+
       <Card>
         <div className="space-y-2">
-          <div className="text-sm font-semibold text-slate-900">Symptom checker</div>
+          <div className="text-sm font-semibold text-slate-900">Health Advice Notice</div>
           <div className="text-xs text-slate-500">
             Educational only. This does not provide a medical diagnosis. If you have severe symptoms, seek urgent care.
           </div>
-          <Alert tone="warning">
+          <Alert tone="warning" className="mt-2">
             If you have chest pain, severe breathing trouble, signs of stroke, severe bleeding, or you feel unsafe, call your
             local emergency number.
           </Alert>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { Users } from 'lucide-react'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Alert, Badge, Button, Card, Input, Label } from '../ui/primitives'
+import { Alert, Badge, Button, Card, Input, Label, PageHeader } from '../ui/primitives'
 
 type PatientProfile = {
   id: number
@@ -108,30 +109,26 @@ export function AdminPatientsPage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold text-slate-900">Patients</div>
-            <div className="text-xs text-slate-500">Admin view: patient profiles and reports</div>
+      <PageHeader
+        icon={<Users className="h-6 w-6 text-white" />}
+        title="Patient Profiles"
+        description="Admin view: read-only access to patient profiles and reports"
+        actions={
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-end">
+            <div>
+              <div className="mt-1">
+                <Input className="border-sky-200/50 bg-white/20 text-white placeholder-sky-200" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by userId, name, phone…" />
+              </div>
+            </div>
+            <Button variant="secondary" onClick={refresh} disabled={loading}>
+              {loading ? 'Loading…' : 'Refresh'}
+            </Button>
           </div>
-          <Button variant="secondary" onClick={refresh} disabled={loading}>
-            {loading ? 'Loading…' : 'Refresh'}
-          </Button>
-        </div>
-
-        <div className="mt-4">
-          <Label>Search</Label>
-          <div className="mt-1">
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by userId, name, phone…" />
-          </div>
-        </div>
-
-        {error && (
-          <div className="mt-4">
-            <Alert tone="error">{error}</Alert>
-          </div>
-        )}
-      </Card>
+        }
+      />
+      {error && (
+        <Alert tone="error">{error}</Alert>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

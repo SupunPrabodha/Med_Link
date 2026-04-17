@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
+import { CreditCard } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Alert, Badge, Button, Card, Input, Label } from '../ui/primitives'
+import { Alert, Badge, Button, Card, Input, Label, PageHeader } from '../ui/primitives'
 
 type Appointment = {
   id: number
@@ -119,15 +120,14 @@ export function PaymentsPage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold text-slate-900">Payments</div>
-            <div className="text-xs text-slate-500">Pay securely for your consultation</div>
-          </div>
-          <Badge>Patient/Admin role</Badge>
-        </div>
+      <PageHeader
+        icon={<CreditCard className="h-6 w-6 text-white" />}
+        title="Payments"
+        description="Pay securely for your consultation"
+        actions={<Badge className="border-emerald-300 bg-emerald-50 text-emerald-700">Patient/Admin role</Badge>}
+      />
 
+      <Card>
         <div className="mt-4">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>

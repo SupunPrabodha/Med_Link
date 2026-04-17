@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { Pill } from 'lucide-react'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Alert, Badge, Button, Card } from '../ui/primitives'
+import { Alert, Badge, Button, Card, PageHeader } from '../ui/primitives'
 
 type Prescription = {
   id: number
@@ -38,22 +39,19 @@ export function PatientPrescriptionsPage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold text-slate-900">Prescriptions</div>
-            <div className="text-xs text-slate-500">Your past digital prescriptions issued by doctors.</div>
-          </div>
+      <PageHeader
+        icon={<Pill className="h-6 w-6 text-white" />}
+        title="Prescriptions"
+        description="Your past digital prescriptions issued by doctors."
+        actions={
           <Button variant="secondary" onClick={load} disabled={loading}>
-            {loading ? 'Loading…' : 'Refresh'}
+            {loading ? 'Refreshing…' : 'Refresh'}
           </Button>
-        </div>
-        {error && (
-          <div className="mt-4">
-            <Alert tone="error">{error}</Alert>
-          </div>
-        )}
-      </Card>
+        }
+      />
+      {error && (
+        <Alert tone="error">{error}</Alert>
+      )}
 
       <Card>
         <div className="overflow-x-auto">

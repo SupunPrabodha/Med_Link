@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { Lock } from 'lucide-react'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Alert, Badge, Button, Card, Input, Label } from '../ui/primitives'
+import { Alert, Badge, Button, Card, Input, Label, PageHeader } from '../ui/primitives'
 
 type Role = 'PATIENT' | 'DOCTOR' | 'ADMIN'
 
@@ -59,32 +60,27 @@ export function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold text-slate-900">User management</div>
-            <div className="text-xs text-slate-500">Admin-only overview of registered accounts</div>
-          </div>
-
+      <PageHeader
+        icon={<Lock className="h-6 w-6 text-white" />}
+        title="User Management"
+        description="Admin-only overview of registered accounts"
+        actions={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-end">
             <div>
-              <Label>Search by email</Label>
               <div className="mt-1">
-                <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g., demo@site.com" disabled={loading} />
+                <Input className="border-sky-200/50 bg-white/20 text-white placeholder-sky-200" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search email..." disabled={loading} />
               </div>
             </div>
             <Button variant="secondary" onClick={load} disabled={loading}>
               {loading ? 'Loading…' : 'Search'}
             </Button>
           </div>
-        </div>
+        }
+      />
 
-        {error && (
-          <div className="mt-4">
-            <Alert tone="error">{error}</Alert>
-          </div>
-        )}
-      </Card>
+      {error && (
+        <Alert tone="error">{error}</Alert>
+      )}
 
       <Card>
         <div className="overflow-x-auto">

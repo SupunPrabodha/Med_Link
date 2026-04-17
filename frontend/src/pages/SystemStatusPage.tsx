@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { Server } from 'lucide-react'
 import axios from 'axios'
 import { api } from '../lib/api'
-import { Badge, Button, Card, Divider } from '../ui/primitives'
+import { Badge, Button, Card, Divider, PageHeader } from '../ui/primitives'
 
 type PingRow = { name: string; url: string; requiresAuth?: boolean }
 
@@ -49,37 +50,36 @@ export function SystemStatusPage() {
   }, [])
 
   return (
-    <Card>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="text-sm font-semibold text-slate-900">Platform status</div>
-          <div className="text-xs text-slate-500">Service health checks</div>
-        </div>
-        <Button variant="secondary" onClick={run} disabled={loading}>
-          {loading ? 'Checking…' : 'Re-check'}
-        </Button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        icon={<Server className="h-6 w-6 text-white" />}
+        title="Platform Status"
+        description="Service health checks across all microservices"
+        actions={
+          <Button variant="secondary" onClick={run} disabled={loading}>
+            {loading ? 'Checking…' : 'Re-check'}
+          </Button>
+        }
+      />
 
-      <div className="mt-4">
-        <Divider />
-      </div>
-
-      <div className="mt-4 space-y-3">
-        {pings.map((p) => (
-          <div key={p.name} className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="text-sm font-medium text-slate-900">{p.name}</div>
-              <div className="flex items-center gap-2">
-                {p.requiresAuth ? <Badge>Auth</Badge> : <Badge>No auth</Badge>}
-                <Badge className="font-mono">{p.url}</Badge>
+      <Card>
+        <div className="space-y-3">
+          {pings.map((p) => (
+            <div key={p.name} className="rounded-lg border border-slate-200 bg-white p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-sm font-medium text-slate-900">{p.name}</div>
+                <div className="flex items-center gap-2">
+                  {p.requiresAuth ? <Badge>Auth</Badge> : <Badge>No auth</Badge>}
+                  <Badge className="font-mono">{p.url}</Badge>
+                </div>
+              </div>
+              <div className="mt-2 text-xs text-slate-700">
+                {results[p.name] ? <span className="font-mono">{results[p.name]}</span> : <span className="text-slate-500">—</span>}
               </div>
             </div>
-            <div className="mt-2 text-xs text-slate-700">
-              {results[p.name] ? <span className="font-mono">{results[p.name]}</span> : <span className="text-slate-500">—</span>}
-            </div>
-          </div>
-        ))}
-      </div>
-    </Card>
+          ))}
+        </div>
+      </Card>
+    </div>
   )
 }

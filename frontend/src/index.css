@@ -1,20 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --med-bg: #f1f6fb;
+  --med-bg: #f0f6ff;
   --med-surface: #ffffff;
-  --med-border: #d7e3f1;
-  --med-accent: #0f766e;
-  --med-accent-soft: #dff5f1;
-  --med-title: #0f172a;
+  --med-border: #d0dff0;
+  --med-accent: #0ea5e9;
+  --med-accent-2: #0f766e;
+  --med-accent-soft: #e0f2fe;
+  --med-title: #0c1a2e;
+  --med-muted: #64748b;
+  --med-card-shadow: 0 4px 24px rgba(14, 165, 233, 0.08), 0 1px 4px rgba(0,0,0,0.06);
+  --med-card-shadow-hover: 0 8px 40px rgba(14, 165, 233, 0.15), 0 2px 8px rgba(0,0,0,0.08);
 }
 
 @layer base {
-  html,
-  body {
+  html, body {
     height: 100%;
+    font-family: 'Inter', system-ui, sans-serif;
   }
 
   #root {
@@ -23,58 +29,258 @@
 
   body {
     background:
-      radial-gradient(circle at 0% -10%, rgba(15, 118, 110, 0.1), transparent 40%),
-      radial-gradient(circle at 100% -20%, rgba(30, 64, 175, 0.08), transparent 38%),
+      radial-gradient(ellipse at 0% 0%, rgba(14, 165, 233, 0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 100% 0%, rgba(15, 118, 110, 0.10) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 100%, rgba(99, 102, 241, 0.06) 0%, transparent 60%),
       var(--med-bg);
     color: var(--med-title);
     @apply antialiased;
   }
 
   * {
-    scrollbar-color: #9fb8d3 #e8eff8;
+    scrollbar-color: #94c7e8 #e8f4fb;
     scrollbar-width: thin;
   }
 }
 
-@layer components {
-  .hospital-shell {
-    @apply min-h-screen;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.65) 0%, rgba(241, 246, 251, 0.9) 40%, rgba(241, 246, 251, 1) 100%);
-  }
+/* ─── Animations ─────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.4); }
+  70%  { box-shadow: 0 0 0 10px rgba(14, 165, 233, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+@keyframes shimmer {
+  from { background-position: -400px 0; }
+  to   { background-position: 400px 0; }
+}
 
+@layer components {
+
+  /* ─── App Shell ──────────────────────────────────────────────── */
   .hospital-topbar {
-    background: rgba(255, 255, 255, 0.86);
-    border-bottom: 1px solid var(--med-border);
-    backdrop-filter: blur(8px);
+    background: rgba(255,255,255,0.88);
+    border-bottom: 1px solid rgba(14, 165, 233, 0.15);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 1px 20px rgba(14, 165, 233, 0.06);
   }
 
   .hospital-panel {
-    background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
-    border: 1px solid var(--med-border);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+    background: linear-gradient(160deg, rgba(255,255,255,0.95) 0%, rgba(248,251,255,0.85) 100%);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(14, 165, 233, 0.15);
+    box-shadow: var(--med-card-shadow);
+    border-radius: 16px;
   }
 
-  .hospital-nav-link {
-    @apply block rounded-lg px-3 py-2 text-sm transition;
+  /* ─── Landing Page ───────────────────────────────────────────── */
+  .hero-section {
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(14,165,233,0.18) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 20%, rgba(15,118,110,0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 60% 90%, rgba(99,102,241,0.10) 0%, transparent 45%),
+      linear-gradient(160deg, #0c1a2e 0%, #0f3460 45%, #0c2340 100%);
+    @apply relative overflow-hidden;
   }
 
-  .hospital-nav-link-active {
-    background: linear-gradient(90deg, #e4f5f2 0%, #eef8ff 100%);
-    border: 1px solid #b9dfda;
-    color: #115e59;
-    @apply font-semibold;
+  .hero-blob {
+    @apply absolute rounded-full opacity-10 blur-3xl;
+    animation: float 6s ease-in-out infinite;
   }
 
-  .hospital-nav-link-inactive {
-    @apply text-slate-700 hover:bg-slate-50;
+  .hero-badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold;
+    background: rgba(14,165,233,0.15);
+    border: 1px solid rgba(14,165,233,0.35);
+    color: #7dd3fc;
+    animation: fadeIn 0.6s ease both;
   }
 
-  .hospital-table-head {
-    background: linear-gradient(180deg, #f8fbff 0%, #edf4fc 100%);
-    @apply text-xs text-slate-700;
+  .hero-title {
+    @apply text-4xl font-extrabold tracking-tight text-white md:text-5xl lg:text-6xl;
+    animation: fadeInUp 0.7s ease 0.1s both;
+    line-height: 1.1;
   }
 
-  .hospital-table-row {
-    @apply transition hover:bg-cyan-50/40;
+  .hero-subtitle {
+    @apply text-lg text-sky-200/80 md:text-xl;
+    animation: fadeInUp 0.7s ease 0.2s both;
+  }
+
+  .hero-cta-primary {
+    @apply inline-flex items-center gap-2 rounded-2xl px-8 py-3.5 text-sm font-semibold text-white transition-all duration-300;
+    background: linear-gradient(135deg, #0ea5e9, #0284c7);
+    box-shadow: 0 4px 20px rgba(14,165,233,0.5), 0 1px 2px rgba(0,0,0,0.2);
+    animation: fadeInUp 0.7s ease 0.3s both;
+  }
+  .hero-cta-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(14,165,233,0.6), 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .hero-cta-secondary {
+    @apply inline-flex items-center gap-2 rounded-2xl border px-8 py-3.5 text-sm font-semibold text-white/90 transition-all duration-300;
+    border-color: rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(8px);
+    animation: fadeInUp 0.7s ease 0.35s both;
+  }
+  .hero-cta-secondary:hover {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.4);
+    transform: translateY(-2px);
+  }
+
+  .hero-stat-card {
+    @apply rounded-2xl px-6 py-4 text-center;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(8px);
+    animation: fadeInUp 0.7s ease 0.4s both;
+  }
+
+  .feature-card {
+    @apply rounded-2xl p-6 transition-all duration-300;
+    background: #ffffff;
+    border: 1px solid rgba(14,165,233,0.12);
+    box-shadow: 0 2px 16px rgba(14,165,233,0.06);
+    animation: fadeInUp 0.6s ease both;
+  }
+  .feature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--med-card-shadow-hover);
+    border-color: rgba(14,165,233,0.3);
+  }
+
+  .feature-icon {
+    @apply flex h-12 w-12 items-center justify-center rounded-2xl text-xl;
+    background: linear-gradient(135deg, #e0f2fe, #f0f9ff);
+    border: 1px solid rgba(14,165,233,0.2);
+  }
+
+  .step-card {
+    @apply relative rounded-2xl p-6;
+    background: linear-gradient(145deg, #ffffff, #f8fbff);
+    border: 1px solid rgba(14,165,233,0.15);
+    box-shadow: 0 2px 16px rgba(14,165,233,0.06);
+    animation: fadeInUp 0.6s ease both;
+  }
+
+  .step-number {
+    @apply flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white;
+    background: linear-gradient(135deg, #0ea5e9, #0f766e);
+    box-shadow: 0 4px 12px rgba(14,165,233,0.4);
+  }
+
+  .role-card {
+    @apply rounded-2xl p-6 transition-all duration-300;
+    border: 1px solid rgba(14,165,233,0.15);
+    animation: fadeInUp 0.6s ease both;
+  }
+  .role-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--med-card-shadow-hover);
+  }
+  .role-card-patient {
+    background: linear-gradient(145deg, #f0f9ff, #e0f2fe);
+  }
+  .role-card-doctor {
+    background: linear-gradient(145deg, #f0fdf4, #dcfce7);
+  }
+  .role-card-admin {
+    background: linear-gradient(145deg, #fdf4ff, #fae8ff);
+  }
+
+  /* ─── Auth Pages ─────────────────────────────────────────────── */
+  .auth-hero {
+    background:
+      radial-gradient(ellipse at 30% 50%, rgba(14,165,233,0.2), transparent 55%),
+      linear-gradient(160deg, #0c1a2e 0%, #0f3460 100%);
+  }
+
+  .auth-card {
+    @apply rounded-3xl bg-white p-8 shadow-2xl;
+    border: 1px solid rgba(14,165,233,0.12);
+    box-shadow: 0 20px 60px rgba(14,165,233,0.12), 0 4px 16px rgba(0,0,0,0.08);
+    animation: fadeInUp 0.5s ease both;
+  }
+
+  /* ─── Doctor Cards ───────────────────────────────────────────── */
+  .doctor-card {
+    @apply rounded-2xl p-5 transition-all duration-300;
+    background: #ffffff;
+    border: 1px solid rgba(14,165,233,0.12);
+    box-shadow: 0 2px 16px rgba(14,165,233,0.06);
+  }
+  .doctor-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--med-card-shadow-hover);
+    border-color: rgba(14,165,233,0.28);
+  }
+
+  /* ─── Stat Widgets ───────────────────────────────────────────── */
+  .stat-widget {
+    @apply rounded-2xl p-5 transition-all duration-200;
+    animation: fadeInUp 0.5s ease both;
+  }
+  .stat-widget:hover {
+    transform: translateY(-2px);
+  }
+
+  /* ─── Video Room ─────────────────────────────────────────────── */
+  .video-header {
+    background: linear-gradient(135deg, #0c1a2e, #0f3460);
+    @apply rounded-2xl p-5;
+  }
+
+  .pulse-dot {
+    @apply inline-block h-2 w-2 rounded-full bg-emerald-400;
+    animation: pulse-ring 2s infinite;
+  }
+
+  /* ─── Utility ────────────────────────────────────────────────── */
+  .gradient-text {
+    background: linear-gradient(135deg, #0ea5e9, #0f766e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .glass-card {
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.5);
+    @apply rounded-2xl;
+    box-shadow: 0 4px 24px rgba(14,165,233,0.08);
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease both;
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease both;
+  }
+
+  /* ─── Section Backgrounds ────────────────────────────────────── */
+  .section-alt {
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(14,165,233,0.07), transparent 60%),
+      #f8fbff;
   }
 }

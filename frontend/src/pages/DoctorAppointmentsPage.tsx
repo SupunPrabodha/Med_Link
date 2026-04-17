@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Calendar } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
 import { connectSse } from '../lib/sse'
-import { Badge, Button, Card, Label } from '../ui/primitives'
+import { Badge, Button, Card, Label, PageHeader } from '../ui/primitives'
 
 type DoctorAppointmentRow = {
     id: number
@@ -16,6 +18,7 @@ type DoctorAppointmentRow = {
 type FilterMode = 'PENDING_APPROVAL' | 'APPROVED' | 'CONFIRMED' | 'CANCELLED'
 
 export function DoctorAppointmentsPage() {
+    const nav = useNavigate()
     const [rows, setRows] = useState<DoctorAppointmentRow[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -115,19 +118,10 @@ export function DoctorAppointmentsPage() {
         setSuccess(null)
         setJoiningId(appointmentId)
         try {
-            const res = await api.get<{ joinUrl: string }>(`/telemedicine/sessions/appointment/${appointmentId}`)
-            const url = res.data?.joinUrl
-            if (!url) {
-                setError('Telemedicine session is not ready yet. Please try again in a moment.')
-                return
-            }
-
-            const opened = window.open(url, '_blank', 'noopener,noreferrer')
-            if (!opened) {
-                window.location.href = url
-            }
+            await api.get<{ joinUrl: string }>(`/telemedicine/sessions/appointment/${appointmentId}`)
+            nav(`/app/telemedicine/${appointmentId}`)
         } catch (err: any) {
-            setError(formatApiError(err, 'Failed to open video session'))
+            setError(formatApiError(err, 'Telemedicine session is not ready yet. Please try again in a moment.'))
         } finally {
             setJoiningId(null)
         }
@@ -162,16 +156,18 @@ export function DoctorAppointmentsPage() {
 
     return (
         <div className="space-y-6">
-            <Card>
-                <div className="flex flex-wrap items-end justify-between gap-3">
-                    <div>
-                        <div className="text-sm font-semibold text-slate-900">Doctor appointments</div>
-                        <div className="text-xs text-slate-500">Review booking requests, track approvals, and cancel appointments if needed.</div>
-                    </div>
+            <PageHeader
+                icon={<Calendar className="h-6 w-6 text-white" />}
+                title="Doctor Appointments"
+                description="Review booking requests, track approvals, and manage video consultations."
+                actions={
                     <Button variant="secondary" onClick={load} disabled={loading}>
-                        {loading ? 'Loading…' : 'Refresh'}
+                        {loading ? 'Refreshing…' : 'Refresh'}
                     </Button>
-                </div>
+                }
+            />
+
+            <Card>
 
                 <div className="mt-4 w-full max-w-xs">
                     <Label>Filter</Label>

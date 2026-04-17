@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { Stethoscope } from 'lucide-react'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
-import { Alert, Badge, Button, Card, Input, Label, Select, Textarea } from '../ui/primitives'
+import { Alert, Badge, Button, Card, Input, Label, Select, Textarea, PageHeader } from '../ui/primitives'
 
 type DoctorProfile = {
   id: number
@@ -269,14 +270,18 @@ export function DoctorProfilePage() {
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        icon={<Stethoscope className="h-6 w-6 text-white" />}
+        title="Doctor Profile"
+        description="Manage your profile and submit for verification"
+        actions={
+          <>
+            {profile && <Badge className="border-sky-300/30 bg-sky-400/20 text-sky-200">{profile.status}</Badge>}
+          </>
+        }
+      />
+
       <Card>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold text-slate-900">My doctor profile</div>
-            <div className="text-xs text-slate-500">Manage your profile and submit for verification</div>
-          </div>
-          {profile && <Badge>{profile.status}</Badge>}
-        </div>
 
         {profile?.rejectionReason && (
           <div className="mt-4">

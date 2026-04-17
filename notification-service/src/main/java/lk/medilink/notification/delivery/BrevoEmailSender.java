@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.*;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
@@ -67,11 +68,11 @@ public class BrevoEmailSender {
 
 		HttpEntity<Map<String, Object>> req = new HttpEntity<>(payload, h);
 		try {
-			ResponseEntity<Map> res = rest.exchange(
+			ResponseEntity<Map<String, Object>> res = rest.exchange(
 					"https://api.brevo.com/v3/smtp/email",
 					HttpMethod.POST,
 					req,
-					Map.class
+					new ParameterizedTypeReference<>() {}
 			);
 			if (res.getStatusCode().is2xxSuccessful()) {
 				Object messageId = res.getBody() == null ? null : res.getBody().get("messageId");

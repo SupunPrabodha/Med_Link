@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -78,7 +79,7 @@ public class TwilioSmsSender {
 
 		HttpEntity<MultiValueMap<String, String>> req = new HttpEntity<>(form, h);
 		try {
-			ResponseEntity<Map> res = rest.exchange(url, HttpMethod.POST, req, Map.class);
+			ResponseEntity<Map<String, Object>> res = rest.exchange(url, HttpMethod.POST, req, new ParameterizedTypeReference<>() {});
 			if (res.getStatusCode().is2xxSuccessful()) {
 				Object sid = res.getBody() == null ? null : res.getBody().get("sid");
 				log.info("Twilio SMS accepted: to={} sid={}", safePhone(normalizedTo), sid == null ? "<none>" : String.valueOf(sid));

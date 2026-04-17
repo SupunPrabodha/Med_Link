@@ -21,6 +21,7 @@ import { PatientProfilePage } from './pages/PatientProfilePage'
 import { PatientPrescriptionsPage } from './pages/PatientPrescriptionsPage'
 import { SymptomCheckerPage } from './pages/SymptomCheckerPage'
 import { DoctorPrescriptionsPage } from './pages/DoctorPrescriptionsPage'
+import { TelemedicinePage } from './pages/TelemedicinePage'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
@@ -92,6 +93,15 @@ export default function App() {
           element={
             <RequireRoles allow={['PATIENT', 'ADMIN']}>
               <AppointmentsPage />
+            </RequireRoles>
+          }
+        />
+        {/* ─── Telemedicine (embedded video room) ─────────────── */}
+        <Route
+          path="telemedicine/:appointmentId"
+          element={
+            <RequireRoles allow={['PATIENT', 'DOCTOR', 'ADMIN']}>
+              <TelemedicinePage />
             </RequireRoles>
           }
         />

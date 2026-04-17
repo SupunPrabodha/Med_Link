@@ -191,7 +191,7 @@ public class PaymentAppService {
 		String address = (profile.address() == null || profile.address().isBlank()) ? "N/A" : profile.address().trim();
 
 		String orderId = "ML-" + UUID.randomUUID();
-		Payment p = repo.save(new Payment(orderId, appointmentId, patientId, amount, currency));
+		repo.save(new Payment(orderId, appointmentId, patientId, amount, currency));
 
 		String amountStr = amount.setScale(2, RoundingMode.HALF_UP).toPlainString();
 		String hash = PayHereSignature.buildCheckoutHash(merchantId, orderId, amountStr, currency, merchantSecret);
