@@ -9,6 +9,7 @@ type SymptomAssessment = {
   riskLevel: string
   summary: string
   advice: string
+  recommendedSpecialties: string[]
 }
 
 function RiskBadge({ level }: { level: string }) {
@@ -165,6 +166,20 @@ export function SymptomCheckerPage() {
             </div>
             <div className="text-xs text-slate-500">{new Date(result.createdAt).toLocaleString()}</div>
             <div className="text-sm text-slate-800">{result.summary}</div>
+
+            {result.recommendedSpecialties?.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-slate-700">Recommended specialties</div>
+                <div className="flex flex-wrap gap-2">
+                  {result.recommendedSpecialties.map((s) => (
+                    <Badge key={s} className="border-slate-200 bg-white text-slate-800">
+                      {s}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <Alert>{result.advice}</Alert>
           </div>
         )}
@@ -188,6 +203,7 @@ export function SymptomCheckerPage() {
                 <th className="px-3 py-2 font-semibold">When</th>
                 <th className="px-3 py-2 font-semibold">Risk</th>
                 <th className="px-3 py-2 font-semibold">Summary</th>
+                <th className="px-3 py-2 font-semibold">Specialties</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -198,11 +214,24 @@ export function SymptomCheckerPage() {
                     <RiskBadge level={h.riskLevel} />
                   </td>
                   <td className="px-3 py-3 text-slate-700">{h.summary}</td>
+                  <td className="px-3 py-3">
+                    {h.recommendedSpecialties?.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {h.recommendedSpecialties.map((s) => (
+                          <Badge key={s} className="border-slate-200 bg-white text-slate-800">
+                            {s}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-500">-</span>
+                    )}
+                  </td>
                 </tr>
               ))}
               {history.length === 0 && !loadingHistory && (
                 <tr>
-                  <td colSpan={3} className="px-3 py-8 text-center text-slate-500">
+                  <td colSpan={4} className="px-3 py-8 text-center text-slate-500">
                     No checks yet.
                   </td>
                 </tr>

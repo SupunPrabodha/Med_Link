@@ -22,3 +22,10 @@ management:
     web:
       exposure:
         include: health,info
+
+app:
+  ai:
+    enabled: false
+    base-url: ""
+    api-key: ""
+    model: ""

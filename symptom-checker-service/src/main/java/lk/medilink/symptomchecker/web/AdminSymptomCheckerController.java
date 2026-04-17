@@ -24,7 +24,14 @@ public class AdminSymptomCheckerController {
 			throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed");
 		}
 		return service.recentAll().stream()
-				.map(a -> new SymptomCheckResponse(a.getId(), a.getCreatedAt(), a.getRiskLevel(), a.getSummary(), a.getAdvice()))
+				.map(a -> new SymptomCheckResponse(
+						a.getId(),
+						a.getCreatedAt(),
+						a.getRiskLevel(),
+						a.getSummary(),
+						a.getAdvice(),
+						SymptomCheckerAppService.parseRecommendedSpecialties(a.getRecommendedSpecialties())
+				))
 				.toList();
 	}
 

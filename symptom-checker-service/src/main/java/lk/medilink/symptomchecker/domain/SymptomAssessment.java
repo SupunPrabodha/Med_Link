@@ -41,10 +41,13 @@ public class SymptomAssessment {
 	@Column(nullable = false, columnDefinition = "text")
 	private String advice;
 
+	@Column(nullable = true, columnDefinition = "text")
+	private String recommendedSpecialties;
+
 	protected SymptomAssessment() {
 	}
 
-	public SymptomAssessment(Long userId, String symptoms, Integer age, Integer durationDays, String riskLevel, String summary, String advice) {
+	public SymptomAssessment(Long userId, String symptoms, Integer age, Integer durationDays, String riskLevel, String summary, String advice, String recommendedSpecialties) {
 		this.userId = userId;
 		this.symptoms = symptoms;
 		this.age = age;
@@ -52,6 +55,7 @@ public class SymptomAssessment {
 		this.riskLevel = riskLevel;
 		this.summary = summary;
 		this.advice = advice;
+		this.recommendedSpecialties = recommendedSpecialties == null ? "" : recommendedSpecialties;
 		this.createdAt = Instant.now();
 	}
 
@@ -89,5 +93,9 @@ public class SymptomAssessment {
 
 	public String getAdvice() {
 		return advice;
+	}
+
+	public String getRecommendedSpecialties() {
+		return recommendedSpecialties == null ? "" : recommendedSpecialties;
 	}
 }

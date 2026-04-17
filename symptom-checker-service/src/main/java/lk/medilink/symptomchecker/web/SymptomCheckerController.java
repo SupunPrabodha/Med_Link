@@ -31,7 +31,14 @@ public class SymptomCheckerController {
 			throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed");
 		}
 		SymptomAssessment a = service.check(userId, req);
-		return new SymptomCheckResponse(a.getId(), a.getCreatedAt(), a.getRiskLevel(), a.getSummary(), a.getAdvice());
+		return new SymptomCheckResponse(
+				a.getId(),
+				a.getCreatedAt(),
+				a.getRiskLevel(),
+				a.getSummary(),
+				a.getAdvice(),
+				SymptomCheckerAppService.parseRecommendedSpecialties(a.getRecommendedSpecialties())
+		);
 	}
 
 	@GetMapping("/history")
@@ -43,7 +50,14 @@ public class SymptomCheckerController {
 			return List.of();
 		}
 		return service.historyForUser(userId).stream()
-				.map(a -> new SymptomCheckResponse(a.getId(), a.getCreatedAt(), a.getRiskLevel(), a.getSummary(), a.getAdvice()))
+				.map(a -> new SymptomCheckResponse(
+						a.getId(),
+						a.getCreatedAt(),
+						a.getRiskLevel(),
+						a.getSummary(),
+						a.getAdvice(),
+						SymptomCheckerAppService.parseRecommendedSpecialties(a.getRecommendedSpecialties())
+				))
 				.toList();
 	}
 
@@ -55,7 +69,14 @@ public class SymptomCheckerController {
 	) {
 		boolean admin = hasRole(roles, "ADMIN");
 		SymptomAssessment a = service.getForUser(id, userId, admin);
-		return new SymptomCheckResponse(a.getId(), a.getCreatedAt(), a.getRiskLevel(), a.getSummary(), a.getAdvice());
+		return new SymptomCheckResponse(
+				a.getId(),
+				a.getCreatedAt(),
+				a.getRiskLevel(),
+				a.getSummary(),
+				a.getAdvice(),
+				SymptomCheckerAppService.parseRecommendedSpecialties(a.getRecommendedSpecialties())
+		);
 	}
 
 	@GetMapping("/ping")

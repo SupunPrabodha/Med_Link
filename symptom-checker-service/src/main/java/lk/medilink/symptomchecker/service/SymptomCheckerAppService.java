@@ -1,22 +1,52 @@
 package lk.medilink.symptomchecker.service;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lk.medilink.symptomchecker.domain.SymptomAssessment;
 import lk.medilink.symptomchecker.repo.SymptomAssessmentRepository;
 import lk.medilink.symptomchecker.web.dto.SymptomCheckRequest;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.List;
-import java.util.Locale;
+import java.net.URI;
+import java.time.Duration;
+import java.util.*;
 
 @Service
 public class SymptomCheckerAppService {
 	private final SymptomAssessmentRepository repo;
+	private final RestTemplate rest;
+	private final boolean aiEnabled;
+	private final String aiBaseUrl;
+	private final String aiApiKey;
+	private final String aiModel;
 
-	public SymptomCheckerAppService(SymptomAssessmentRepository repo) {
+	private static final int MAX_SYMPTOMS_LEN = 2000;
+	private static final int MAX_SPECIALTIES = 5;
+
+	public SymptomCheckerAppService(
+			SymptomAssessmentRepository repo,
+			RestTemplateBuilder restBuilder,
+			@Value("${app.ai.enabled:false}") boolean aiEnabled,
+			@Value("${app.ai.base-url:}") String aiBaseUrl,
+			@Value("${app.ai.api-key:}") String aiApiKey,
+			@Value("${app.ai.model:}") String aiModel
+	) {
 		this.repo = repo;
+		this.rest = restBuilder
+				.setConnectTimeout(Duration.ofSeconds(3))
+				.setReadTimeout(Duration.ofSeconds(8))
+				.build();
+		this.aiEnabled = aiEnabled;
+		this.aiBaseUrl = aiBaseUrl == null ? "" : aiBaseUrl.trim();
+		this.aiApiKey = aiApiKey == null ? "" : aiApiKey.trim();
+		this.aiModel = aiModel == null ? "" : aiModel.trim();
 	}
 
 	@Transactional
@@ -24,23 +54,46 @@ public class SymptomCheckerAppService {
 		if (userId == null || userId <= 0) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid user");
 		}
+		if (req == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid request");
+		}
 
 		String symptoms = req.symptoms() == null ? "" : req.symptoms().trim();
 		if (symptoms.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Symptoms are required");
 		}
+		if (symptoms.length() > MAX_SYMPTOMS_LEN) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Symptoms are too long");
+		}
+
+		Integer age = req.age();
+		if (age != null && (age < 0 || age > 120)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid age");
+		}
+
+		Integer durationDays = req.durationDays();
+		if (durationDays != null && (durationDays < 0 || durationDays > 365)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid duration");
+		}
 
 		String normalized = symptoms.toLowerCase(Locale.ROOT);
-		TriageResult result = triage(normalized, req.age(), req.durationDays());
+		TriageResult result = triage(normalized, age, durationDays);
+
+		List<String> baseline = recommendSpecialtiesHeuristic(normalized, age);
+		List<String> specialties = "EMERGENCY".equals(result.riskLevel)
+				? baseline
+				: maybeRecommendSpecialtiesWithAi(symptoms, age, durationDays, baseline);
+		String specialtiesCsv = String.join(",", specialties);
 
 		SymptomAssessment a = new SymptomAssessment(
 				userId,
 				symptoms,
-				req.age(),
-				req.durationDays(),
+				age,
+				durationDays,
 				result.riskLevel,
 				result.summary,
-				result.advice
+				result.advice,
+				specialtiesCsv
 		);
 		return repo.save(a);
 	}
@@ -130,6 +183,143 @@ public class SymptomCheckerAppService {
 		};
 
 		return new TriageResult(risk, summary, advice);
+	}
+
+	public static List<String> parseRecommendedSpecialties(String csv) {
+		if (csv == null || csv.isBlank()) return List.of();
+		LinkedHashSet<String> out = new LinkedHashSet<>();
+		for (String part : csv.split(",")) {
+			if (part == null) continue;
+			String s = part.trim();
+			if (s.isEmpty()) continue;
+			if (s.length() > 80) s = s.substring(0, 80);
+			out.add(s);
+			if (out.size() >= MAX_SPECIALTIES) break;
+		}
+		return List.copyOf(out);
+	}
+
+	private static List<String> recommendSpecialtiesHeuristic(String normalizedSymptoms, Integer age) {
+		if (containsAny(normalizedSymptoms,
+				"chest pain",
+				"shortness of breath",
+				"difficulty breathing",
+				"blue lips",
+				"unconscious",
+				"seizure",
+				"severe bleeding",
+				"slurred speech",
+				"one-sided weakness",
+				"stroke"
+		)) {
+			return List.of("Emergency Medicine");
+		}
+
+		LinkedHashSet<String> out = new LinkedHashSet<>();
+
+		if (age != null && age >= 0 && age < 16) out.add("Pediatrics");
+		out.add("General Medicine");
+
+		if (containsAny(normalizedSymptoms, "cough", "sore throat", "sinus", "ear pain", "runny nose")) {
+			out.add("ENT");
+		}
+		if (containsAny(normalizedSymptoms, "rash", "itch", "hives", "swelling")) {
+			out.add("Dermatology");
+		}
+		if (containsAny(normalizedSymptoms, "headache", "migraine", "dizzy", "dizziness", "faint")) {
+			out.add("Neurology");
+		}
+		if (containsAny(normalizedSymptoms, "stomach", "abdominal", "diarrhea", "vomiting", "nausea")) {
+			out.add("Gastroenterology");
+		}
+		if (containsAny(normalizedSymptoms, "chest", "palpitations")) {
+			out.add("Cardiology");
+		}
+		if (containsAny(normalizedSymptoms, "anxious", "anxiety", "panic", "depressed", "depression")) {
+			out.add("Psychiatry");
+		}
+		if (containsAny(normalizedSymptoms, "injury", "fracture", "sprain", "joint pain", "back pain")) {
+			out.add("Orthopedics");
+		}
+
+		List<String> list = new ArrayList<>(out);
+		if (list.size() > MAX_SPECIALTIES) list = list.subList(0, MAX_SPECIALTIES);
+		return List.copyOf(list);
+	}
+
+	private List<String> maybeRecommendSpecialtiesWithAi(
+			String symptoms,
+			Integer age,
+			Integer durationDays,
+			List<String> baseline
+	) {
+		List<String> baselineClean = cleanSpecialties(baseline);
+		if (baselineClean.isEmpty()) baselineClean = List.of("General Medicine");
+
+		if (!aiEnabled) return baselineClean;
+		if (aiBaseUrl.isBlank()) return baselineClean;
+
+		URI base;
+		try {
+			base = URI.create(aiBaseUrl);
+		} catch (IllegalArgumentException ex) {
+			return baselineClean;
+		}
+
+		String scheme = base.getScheme();
+		if (scheme == null || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))) return baselineClean;
+		if (base.getHost() == null || base.getHost().isBlank()) return baselineClean;
+		if (base.getUserInfo() != null) return baselineClean;
+		if (base.getQuery() != null) return baselineClean;
+		if (base.getFragment() != null) return baselineClean;
+
+		URI url = UriComponentsBuilder.fromUri(base)
+				.path("/recommend-specialties")
+				.build(true)
+				.toUri();
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+		if (!aiApiKey.isBlank()) {
+			headers.set("X-API-Key", aiApiKey);
+		}
+
+		AiSpecialtyRequest body = new AiSpecialtyRequest(symptoms, age, durationDays, baselineClean, aiModel.isBlank() ? null : aiModel);
+		HttpEntity<AiSpecialtyRequest> entity = new HttpEntity<>(body, headers);
+
+		try {
+			ResponseEntity<AiSpecialtyResponse> resp = rest.exchange(url, HttpMethod.POST, entity, AiSpecialtyResponse.class);
+			AiSpecialtyResponse r = resp.getBody();
+			List<String> ai = r == null ? null : r.specialties();
+			List<String> cleaned = cleanSpecialties(ai);
+			return cleaned.isEmpty() ? baselineClean : cleaned;
+		} catch (RestClientException ex) {
+			return baselineClean;
+		}
+	}
+
+	private static List<String> cleanSpecialties(List<String> in) {
+		if (in == null || in.isEmpty()) return List.of();
+		LinkedHashSet<String> out = new LinkedHashSet<>();
+		for (String s : in) {
+			if (s == null) continue;
+			String t = s.trim().replace(",", " ");
+			if (t.isBlank()) continue;
+			t = t.replaceAll("\\s{2,}", " ").trim();
+			if (t.length() > 80) t = t.substring(0, 80);
+			out.add(t);
+			if (out.size() >= MAX_SPECIALTIES) break;
+		}
+		return List.copyOf(out);
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	private record AiSpecialtyRequest(String symptoms, Integer age, Integer durationDays, List<String> baseline, String model) {
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	private record AiSpecialtyResponse(List<String> specialties) {
 	}
 
 	private static boolean containsAny(String haystack, String... needles) {
