@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --med-bg: #f1f6fb;
+  --med-surface: #ffffff;
+  --med-border: #d7e3f1;
+  --med-accent: #0f766e;
+  --med-accent-soft: #dff5f1;
+  --med-title: #0f172a;
+}
+
 @layer base {
   html,
   body {
@@ -13,6 +22,59 @@
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    background:
+      radial-gradient(circle at 0% -10%, rgba(15, 118, 110, 0.1), transparent 40%),
+      radial-gradient(circle at 100% -20%, rgba(30, 64, 175, 0.08), transparent 38%),
+      var(--med-bg);
+    color: var(--med-title);
+    @apply antialiased;
+  }
+
+  * {
+    scrollbar-color: #9fb8d3 #e8eff8;
+    scrollbar-width: thin;
+  }
+}
+
+@layer components {
+  .hospital-shell {
+    @apply min-h-screen;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.65) 0%, rgba(241, 246, 251, 0.9) 40%, rgba(241, 246, 251, 1) 100%);
+  }
+
+  .hospital-topbar {
+    background: rgba(255, 255, 255, 0.86);
+    border-bottom: 1px solid var(--med-border);
+    backdrop-filter: blur(8px);
+  }
+
+  .hospital-panel {
+    background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+    border: 1px solid var(--med-border);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  }
+
+  .hospital-nav-link {
+    @apply block rounded-lg px-3 py-2 text-sm transition;
+  }
+
+  .hospital-nav-link-active {
+    background: linear-gradient(90deg, #e4f5f2 0%, #eef8ff 100%);
+    border: 1px solid #b9dfda;
+    color: #115e59;
+    @apply font-semibold;
+  }
+
+  .hospital-nav-link-inactive {
+    @apply text-slate-700 hover:bg-slate-50;
+  }
+
+  .hospital-table-head {
+    background: linear-gradient(180deg, #f8fbff 0%, #edf4fc 100%);
+    @apply text-xs text-slate-700;
+  }
+
+  .hospital-table-row {
+    @apply transition hover:bg-cyan-50/40;
   }
 }
