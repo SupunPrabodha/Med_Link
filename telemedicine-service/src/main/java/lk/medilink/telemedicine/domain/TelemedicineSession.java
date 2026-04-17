@@ -37,6 +37,9 @@ public class TelemedicineSession {
 	private Instant createdAt;
 
 	@Column(nullable = true)
+	private Instant completedAt;
+
+	@Column(nullable = true)
 	private Instant cancelledAt;
 
 	protected TelemedicineSession() {
@@ -51,6 +54,8 @@ public class TelemedicineSession {
 		this.joinUrl = joinUrl;
 		this.status = SessionStatus.ACTIVE;
 		this.createdAt = Instant.now();
+		this.completedAt = null;
+		this.cancelledAt = null;
 	}
 
 	public Long getId() {
@@ -89,6 +94,10 @@ public class TelemedicineSession {
 		return createdAt;
 	}
 
+	public Instant getCompletedAt() {
+		return completedAt;
+	}
+
 	public Instant getCancelledAt() {
 		return cancelledAt;
 	}
@@ -100,14 +109,24 @@ public class TelemedicineSession {
 		this.roomName = roomName;
 		this.joinUrl = joinUrl;
 		this.status = SessionStatus.ACTIVE;
+		this.completedAt = null;
 		this.cancelledAt = null;
 	}
 
 	public void cancel() {
-		if (this.status == SessionStatus.CANCELLED) {
+		if (this.status == SessionStatus.CANCELLED || this.status == SessionStatus.COMPLETED) {
 			return;
 		}
 		this.status = SessionStatus.CANCELLED;
 		this.cancelledAt = Instant.now();
+	}
+
+	public boolean complete() {
+		if (this.status == SessionStatus.COMPLETED || this.status == SessionStatus.CANCELLED) {
+			return false;
+		}
+		this.status = SessionStatus.COMPLETED;
+		this.completedAt = Instant.now();
+		return true;
 	}
 }

@@ -70,6 +70,19 @@ $pw = "Passw0rd!"
 
 $gateway = "http://localhost:8090"
 
+# Optional overrides to validate real email/SMS delivery in end-to-end runs
+$adminEmail = $env:SMOKE_ADMIN_EMAIL
+if (-not $adminEmail) { $adminEmail = "admin_$suffix@demo.com" }
+$doctorEmail = $env:SMOKE_DOCTOR_EMAIL
+if (-not $doctorEmail) { $doctorEmail = "doctor_$suffix@demo.com" }
+$patientEmail = $env:SMOKE_PATIENT_EMAIL
+if (-not $patientEmail) { $patientEmail = "patient_$suffix@demo.com" }
+
+$doctorPhone = $env:SMOKE_DOCTOR_PHONE
+if (-not $doctorPhone) { $doctorPhone = "+94770000000" }
+$patientPhone = $env:SMOKE_PATIENT_PHONE
+if (-not $patientPhone) { $patientPhone = "+94770000001" }
+
 $paymentProvider = $env:SMOKE_PAYMENT_PROVIDER
 if (-not $paymentProvider) { $paymentProvider = "payhere" }
 $paymentProvider = $paymentProvider.ToLowerInvariant()
@@ -111,6 +124,14 @@ Wait-ForHttp -Name "telemedicine-service health" -OkStatuses @(200) -Request {
   Invoke-WebRequest -UseBasicParsing "http://localhost:8087/actuator/health" -TimeoutSec 2
 }
 
+Wait-ForHttp -Name "notification-service health" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "http://localhost:8083/actuator/health" -TimeoutSec 2
+}
+
+Wait-ForHttp -Name "prescription-service health" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "http://localhost:8088/actuator/health" -TimeoutSec 2
+}
+
 # Ensure services are registered in Eureka before attempting gateway load-balancing routes
 Wait-ForHttp -Name "eureka auth-service registered" -OkStatuses @(200) -Request {
   Invoke-WebRequest -UseBasicParsing "http://localhost:8761/eureka/apps/AUTH-SERVICE" -TimeoutSec 2
@@ -131,6 +152,14 @@ Wait-ForHttp -Name "eureka patient-service registered" -OkStatuses @(200) -Reque
 
 Wait-ForHttp -Name "eureka telemedicine-service registered" -OkStatuses @(200) -Request {
   Invoke-WebRequest -UseBasicParsing "http://localhost:8761/eureka/apps/TELEMEDICINE-SERVICE" -TimeoutSec 2
+}
+
+Wait-ForHttp -Name "eureka notification-service registered" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "http://localhost:8761/eureka/apps/NOTIFICATION-SERVICE" -TimeoutSec 2
+}
+
+Wait-ForHttp -Name "eureka prescription-service registered" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "http://localhost:8761/eureka/apps/PRESCRIPTION-SERVICE" -TimeoutSec 2
 }
 
 # Wait for auth route to become routable through gateway.
@@ -156,6 +185,14 @@ Wait-ForHttp -Name "patient route" -OkStatuses @(200, 401, 403, 404) -Request {
   Invoke-WebRequest -UseBasicParsing "$gateway/api/patients/ping" -TimeoutSec 2
 }
 
+Wait-ForHttp -Name "notification route" -OkStatuses @(200, 401, 403, 404) -Request {
+  Invoke-WebRequest -UseBasicParsing "$gateway/api/notifications/ping" -TimeoutSec 2
+}
+
+Wait-ForHttp -Name "prescription route" -OkStatuses @(200, 401, 403, 404) -Request {
+  Invoke-WebRequest -UseBasicParsing "$gateway/api/prescriptions/ping" -TimeoutSec 2
+}
+
 Wait-ForHttp -Name "telemedicine route" -OkStatuses @(200, 401, 403, 404) -Request {
   Invoke-WebRequest -UseBasicParsing "$gateway/api/telemedicine/ping" -TimeoutSec 2
 }
@@ -172,17 +209,31 @@ function Register-User($email, $role) {
   }
 }
 
-$admin = Register-User "admin_$suffix@demo.com" "ADMIN"
-$doctor = Register-User "doctor_$suffix@demo.com" "DOCTOR"
-$patient = Register-User "patient_$suffix@demo.com" "PATIENT"
+$admin = Register-User $adminEmail "ADMIN"
+$doctor = Register-User $doctorEmail "DOCTOR"
+$patient = Register-User $patientEmail "PATIENT"
 
 $adminHeaders = @{ Authorization = "Bearer $($admin.accessToken)" }
 $doctorHeaders = @{ Authorization = "Bearer $($doctor.accessToken)" }
 $patientHeaders = @{ Authorization = "Bearer $($patient.accessToken)" }
 
-# Ensure telemedicine route is actually reachable through gateway (auth required)
+# Patient creates profile (ensures contact lookup has a phone number)
+$patientProfileBody = @{ fullName = "Patient Demo $suffix"; phone = $patientPhone; dateOfBirth = "1990-01-01"; address = "Colombo" } | ConvertTo-Json
+$patientProfile = Invoke-RestMethod -Method Post -Uri "$gateway/api/patients/me/profile" -ContentType "application/json" -Headers $patientHeaders -Body $patientProfileBody
+$patientUserId = $patientProfile.userId
+Write-Host "Upserted patient profile userId=$patientUserId phone=$($patientProfile.phone)"
+
+# Ensure routes are reachable through gateway (auth required)
 Wait-ForHttp -Name "telemedicine ping (auth)" -OkStatuses @(200) -Request {
   Invoke-WebRequest -UseBasicParsing "$gateway/api/telemedicine/ping" -Headers $patientHeaders -TimeoutSec 2
+}
+
+Wait-ForHttp -Name "notification ping (auth)" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "$gateway/api/notifications/ping" -Headers $patientHeaders -TimeoutSec 2
+}
+
+Wait-ForHttp -Name "prescription ping (auth)" -OkStatuses @(200) -Request {
+  Invoke-WebRequest -UseBasicParsing "$gateway/api/prescriptions/ping" -Headers $patientHeaders -TimeoutSec 2
 }
 
 # RBAC sanity check: patient must NOT access admin-only endpoint
@@ -210,7 +261,7 @@ try {
 }
 
 # Doctor creates profile
-$profileBody = @{ fullName = "Dr Demo $suffix"; registrationNo = "REG-$suffix"; specialization = "General"; documentsUrl = "http://example.com/doc/$suffix" } | ConvertTo-Json
+$profileBody = @{ fullName = "Dr Demo $suffix"; phone = $doctorPhone; registrationNo = "REG-$suffix"; specialization = "General"; documentsUrl = "http://example.com/doc/$suffix" } | ConvertTo-Json
 $profile = Invoke-RestMethod -Method Post -Uri "$gateway/api/doctors/me/profile" -ContentType "application/json" -Headers $doctorHeaders -Body $profileBody
 
 # Admin approves the pending profile we just created (match by registrationNo)
@@ -384,6 +435,23 @@ if ($latest.status -ne "CONFIRMED") {
   throw "Expected appointment status CONFIRMED after PayHere notify; got '$($latest.status)'."
 }
 
+# Doctor issues a prescription for this appointment
+$rxBody = @{ patientUserId = $patientUserId; appointmentId = $appt.id; diagnosis = "General checkup"; medications = "Paracetamol 500mg - 1 tab twice daily for 3 days"; notes = "Drink plenty of water" } | ConvertTo-Json
+$rx = Invoke-RestMethod -Method Post -Uri "$gateway/api/prescriptions/doctor/me" -ContentType "application/json" -Headers $doctorHeaders -Body $rxBody
+Write-Host "Issued prescription id=$($rx.id) patientUserId=$($rx.patientUserId) appointmentId=$($rx.appointmentId)"
+
+$patientPrescriptions = Invoke-RestMethod -Method Get -Uri "$gateway/api/prescriptions/patient/me" -Headers $patientHeaders
+$foundRx = @($patientPrescriptions) | Where-Object { $_.id -eq $rx.id } | Select-Object -First 1
+if (-not $foundRx) {
+  throw "Patient prescriptions list did not include issued prescription id=$($rx.id)"
+}
+
+# Snapshot notifications (best-effort verification that events are being consumed)
+$patientNotifs = Invoke-RestMethod -Method Get -Uri "$gateway/api/notifications?limit=20" -Headers $patientHeaders
+Write-Host "Patient notifications count=$(@($patientNotifs).Count)"
+$adminNotifs = Invoke-RestMethod -Method Get -Uri "$gateway/api/admin/notifications?limit=20" -Headers $adminHeaders
+Write-Host "Admin notifications count=$(@($adminNotifs).Count)"
+
 # Telemedicine session should be created by appointment.confirmed event
 $sessionDeadline = (Get-Date).AddSeconds(90)
 $session = $null
@@ -421,9 +489,9 @@ $adminUsers = Invoke-RestMethod -Method Get -Uri "$gateway/api/admin/users?q=$su
 $adminUsersArr = @($adminUsers)
 
 $expected = @(
-  @{ email = "admin_$suffix@demo.com"; role = "ADMIN" },
-  @{ email = "doctor_$suffix@demo.com"; role = "DOCTOR" },
-  @{ email = "patient_$suffix@demo.com"; role = "PATIENT" }
+  @{ email = $adminEmail; role = "ADMIN" },
+  @{ email = $doctorEmail; role = "DOCTOR" },
+  @{ email = $patientEmail; role = "PATIENT" }
 )
 
 foreach ($e in $expected) {
@@ -481,5 +549,10 @@ if ($cancelSession.status -ne "CANCELLED") {
 
 Write-Host "Telemedicine session cancelled status=$($cancelSession.status)"
 
-Write-Host "[7/7] Done. (doctor.verified, payment.completed, appointment.confirmed/cancelled, telemedicine.session, admin.users/appointments verified)."
+$patientNotifs2 = Invoke-RestMethod -Method Get -Uri "$gateway/api/notifications?limit=20" -Headers $patientHeaders
+Write-Host "Patient notifications after cancel count=$(@($patientNotifs2).Count)"
+$adminNotifs2 = Invoke-RestMethod -Method Get -Uri "$gateway/api/admin/notifications?limit=20" -Headers $adminHeaders
+Write-Host "Admin notifications after cancel count=$(@($adminNotifs2).Count)"
+
+Write-Host "[7/7] Done. (doctor.verified, payment.completed, appointment.confirmed/cancelled, telemedicine.session, prescriptions, notifications, admin.users/appointments verified)."
 

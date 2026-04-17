@@ -1,0 +1,31 @@
+server:
+  port: 8089
+
+spring:
+  application:
+    name: symptom-checker-service
+  datasource:
+    url: jdbc:postgresql://localhost:5440/symptomdb
+    username: symptom
+    password: symptom
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  ai:
+    enabled: false
+    base-url: ""
+    api-key: ""
+    model: ""

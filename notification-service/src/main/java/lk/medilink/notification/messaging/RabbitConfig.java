@@ -28,6 +28,8 @@ public class RabbitConfig {
 		Queue paymentCompleted = new Queue("notification.payment.completed", true);
 		Queue paymentFailed = new Queue("notification.payment.failed", true);
 
+		Queue consultationCompleted = new Queue("notification.consultation.completed", true);
+
 		return new Declarables(
 				appointmentCreated,
 				appointmentCancelled,
@@ -36,13 +38,15 @@ public class RabbitConfig {
 				doctorRejected,
 				paymentCompleted,
 				paymentFailed,
+				consultationCompleted,
 				BindingBuilder.bind(appointmentCreated).to(exchange).with("appointment.created"),
 				BindingBuilder.bind(appointmentCancelled).to(exchange).with("appointment.cancelled"),
 				BindingBuilder.bind(appointmentConfirmed).to(exchange).with("appointment.confirmed"),
 				BindingBuilder.bind(doctorVerified).to(exchange).with("doctor.verified"),
 				BindingBuilder.bind(doctorRejected).to(exchange).with("doctor.rejected"),
 				BindingBuilder.bind(paymentCompleted).to(exchange).with("payment.completed"),
-				BindingBuilder.bind(paymentFailed).to(exchange).with("payment.failed")
+				BindingBuilder.bind(paymentFailed).to(exchange).with("payment.failed"),
+				BindingBuilder.bind(consultationCompleted).to(exchange).with("consultation.completed")
 		);
 	}
 }

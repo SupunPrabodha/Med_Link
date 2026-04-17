@@ -43,6 +43,14 @@ export function NotificationsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      void refresh()
+    }, 10_000)
+    return () => window.clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope])
+
   return (
     <div className="space-y-6">
       <Card>

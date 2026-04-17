@@ -40,7 +40,16 @@ public class PatientController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public PatientProfile upsertProfile(@RequestHeader("X-User-Id") Long userId,
 	                                  @Valid @RequestBody UpsertPatientProfileRequest req) {
-		return service.upsertProfile(userId, req.fullName().trim(), req.phone().trim(), req.dateOfBirth(), trimToNull(req.address()));
+		return service.upsertProfile(
+				userId,
+				req.fullName().trim(),
+				req.phone().trim(),
+				req.dateOfBirth(),
+				trimToNull(req.address()),
+				trimToNull(req.gender()),
+				trimToNull(req.emergencyContactName()),
+				trimToNull(req.emergencyContactPhone())
+		);
 	}
 
 	@PostMapping(value = "/me/profile-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

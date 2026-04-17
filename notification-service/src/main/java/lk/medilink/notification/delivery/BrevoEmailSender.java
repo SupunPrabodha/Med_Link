@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -33,6 +34,13 @@ public class BrevoEmailSender {
 		this.apiKey = apiKey == null ? "" : apiKey;
 		this.fromEmail = fromEmail == null ? "" : fromEmail;
 		this.fromName = fromName == null ? "" : fromName;
+
+		log.info(
+				"Brevo email sender configured: enabled={} from={} apiKeyLen={} ",
+				isEnabled(),
+				safeEmail(this.fromEmail),
+				this.apiKey.length()
+		);
 	}
 
 	public boolean isEnabled() {
@@ -47,6 +55,7 @@ public class BrevoEmailSender {
 
 		HttpHeaders h = new HttpHeaders();
 		h.setContentType(MediaType.APPLICATION_JSON);
+		h.setAccept(List.of(MediaType.APPLICATION_JSON));
 		h.set("api-key", apiKey);
 
 		Map<String, Object> payload = Map.of(
@@ -58,17 +67,30 @@ public class BrevoEmailSender {
 
 		HttpEntity<Map<String, Object>> req = new HttpEntity<>(payload, h);
 		try {
-			ResponseEntity<String> res = rest.exchange(
+			ResponseEntity<Map> res = rest.exchange(
 					"https://api.brevo.com/v3/smtp/email",
 					HttpMethod.POST,
 					req,
-					String.class
+					Map.class
 			);
-			if (!res.getStatusCode().is2xxSuccessful()) {
-				log.warn("Brevo email failed: status={}", res.getStatusCode().value());
+			if (res.getStatusCode().is2xxSuccessful()) {
+				Object messageId = res.getBody() == null ? null : res.getBody().get("messageId");
+				log.info("Brevo email accepted: to={} messageId={}", safeEmail(toEmail), messageId == null ? "<none>" : String.valueOf(messageId));
+				return;
 			}
+			log.warn("Brevo email failed: status={} body={}", res.getStatusCode().value(), res.getBody());
+		} catch (HttpStatusCodeException ex) {
+			String body = ex.getResponseBodyAsString();
+			log.warn("Brevo email failed: status={} body={}", ex.getStatusCode().value(), body == null || body.isBlank() ? "<empty>" : body);
 		} catch (RestClientException ex) {
 			log.warn("Brevo email failed: {}", ex.getMessage());
 		}
+	}
+
+	private static String safeEmail(String email) {
+		if (email == null || email.isBlank()) return "<empty>";
+		int at = email.indexOf('@');
+		if (at <= 1) return "***";
+		return email.substring(0, 1) + "***" + email.substring(at);
 	}
 }

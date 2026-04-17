@@ -1,5 +1,7 @@
 package lk.medilink.notification.delivery;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.*;
@@ -12,6 +14,8 @@ import java.time.Duration;
 
 @Component
 public class ContactLookupClient {
+	private static final Logger log = LoggerFactory.getLogger(ContactLookupClient.class);
+
 	private final RestTemplate rest;
 	private final String internalToken;
 	private final String authBaseUrl;
@@ -31,6 +35,14 @@ public class ContactLookupClient {
 		this.authBaseUrl = authBaseUrl;
 		this.patientBaseUrl = patientBaseUrl;
 		this.doctorBaseUrl = doctorBaseUrl;
+
+		log.info(
+				"Contact lookup configured: internalTokenSet={} authBaseUrl={} patientBaseUrl={} doctorBaseUrl={}",
+				!this.internalToken.isBlank(),
+				this.authBaseUrl,
+				this.patientBaseUrl,
+				this.doctorBaseUrl
+		);
 	}
 
 	public String emailForUser(Long userId) {
@@ -86,6 +98,7 @@ public class ContactLookupClient {
 			ResponseEntity<T> res = rest.exchange(url, HttpMethod.GET, entity, clazz);
 			return res.getBody();
 		} catch (RestClientException ex) {
+			log.warn("Contact lookup failed: url={} err={}", url, ex.getMessage());
 			return null;
 		}
 	}

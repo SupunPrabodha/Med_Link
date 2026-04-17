@@ -21,10 +21,13 @@ export function DoctorAppointmentsPage() {
     const [filter, setFilter] = useState<FilterMode>('PENDING_APPROVAL')
     const [updatingId, setUpdatingId] = useState<number | null>(null)
     const [joiningId, setJoiningId] = useState<number | null>(null)
+    const [completingId, setCompletingId] = useState<number | null>(null)
+    const [success, setSuccess] = useState<string | null>(null)
 
     async function load() {
         setLoading(true)
         setError(null)
+        setSuccess(null)
         try {
             const res = await api.get<DoctorAppointmentRow[]>('/appointments/doctor/me')
             setRows(res.data ?? [])
@@ -45,8 +48,17 @@ export function DoctorAppointmentsPage() {
         void load()
     }, [])
 
+    useEffect(() => {
+        const id = window.setInterval(() => {
+            void load()
+        }, 10_000)
+        return () => window.clearInterval(id)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
     async function updateApproval(appointmentId: number, appoinmentApproval: 'APPROVED' | 'DECLINED') {
         setError(null)
+        setSuccess(null)
         setUpdatingId(appointmentId)
         try {
             const res = await api.put<DoctorAppointmentRow>(`/appointments/doctor/me/${appointmentId}/approval`, { appoinmentApproval })
@@ -61,6 +73,7 @@ export function DoctorAppointmentsPage() {
 
     async function cancelAppointment(appointmentId: number) {
         setError(null)
+        setSuccess(null)
         setUpdatingId(appointmentId)
         try {
             const res = await api.delete<DoctorAppointmentRow>(`/appointments/doctor/me/${appointmentId}`)
@@ -75,6 +88,7 @@ export function DoctorAppointmentsPage() {
 
     async function joinVideo(appointmentId: number) {
         setError(null)
+        setSuccess(null)
         setJoiningId(appointmentId)
         try {
             const res = await api.get<{ joinUrl: string }>(`/telemedicine/sessions/appointment/${appointmentId}`)
@@ -92,6 +106,20 @@ export function DoctorAppointmentsPage() {
             setError(formatApiError(err, 'Failed to open video session'))
         } finally {
             setJoiningId(null)
+        }
+    }
+
+    async function completeConsultation(appointmentId: number) {
+        setError(null)
+        setSuccess(null)
+        setCompletingId(appointmentId)
+        try {
+            await api.post(`/telemedicine/sessions/appointment/${appointmentId}/complete`)
+            setSuccess(`Appointment #${appointmentId} marked as completed.`)
+        } catch (err: any) {
+            setError(formatApiError(err, 'Failed to mark consultation as completed'))
+        } finally {
+            setCompletingId(null)
         }
     }
 
@@ -139,6 +167,7 @@ export function DoctorAppointmentsPage() {
                 </div>
 
                 {error && <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error}</div>}
+                {success && <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">{success}</div>}
             </Card>
 
             <Card>
@@ -158,6 +187,7 @@ export function DoctorAppointmentsPage() {
                             {filteredRows.map((a) => {
                                 const busy = updatingId === a.id
                                 const joining = joiningId === a.id
+                                const completing = completingId === a.id
                                 const canJoinVideo = a.status === 'CONFIRMED'
                                 const canApprove = a.status !== 'CANCELLED' && (a.appoinmentApproval == null)
                                 const canCancel = a.status !== 'CANCELLED' && a.appoinmentApproval === 'APPROVED'
@@ -176,13 +206,22 @@ export function DoctorAppointmentsPage() {
                                         <td className="px-3 py-3">
                                             <div className="flex flex-wrap gap-2">
                                                 {canJoinVideo && (
-                                                    <Button
-                                                        variant="secondary"
-                                                        onClick={() => joinVideo(a.id)}
-                                                        disabled={joining || busy || loading || updatingId != null}
-                                                    >
-                                                        {joining ? 'Opening…' : 'Join video'}
-                                                    </Button>
+                                                    <>
+                                                        <Button
+                                                            variant="secondary"
+                                                            onClick={() => joinVideo(a.id)}
+                                                            disabled={joining || completing || busy || loading || updatingId != null}
+                                                        >
+                                                            {joining ? 'Opening…' : 'Join video'}
+                                                        </Button>
+                                                        <Button
+                                                            variant="secondary"
+                                                            onClick={() => completeConsultation(a.id)}
+                                                            disabled={joining || completing || busy || loading || updatingId != null}
+                                                        >
+                                                            {completing ? 'Completing…' : 'Mark completed'}
+                                                        </Button>
+                                                    </>
                                                 )}
 
                                                 {canApprove && (
@@ -190,14 +229,14 @@ export function DoctorAppointmentsPage() {
                                                         <Button
                                                             variant="secondary"
                                                             onClick={() => updateApproval(a.id, 'APPROVED')}
-                                                            disabled={joining || busy || loading || updatingId != null}
+                                                            disabled={joining || completing || busy || loading || updatingId != null}
                                                         >
                                                             {busy ? 'Working…' : 'Accept'}
                                                         </Button>
                                                         <Button
                                                             variant="secondary"
                                                             onClick={() => updateApproval(a.id, 'DECLINED')}
-                                                            disabled={joining || busy || loading || updatingId != null}
+                                                            disabled={joining || completing || busy || loading || updatingId != null}
                                                         >
                                                             {busy ? 'Working…' : 'Reject'}
                                                         </Button>
@@ -208,7 +247,7 @@ export function DoctorAppointmentsPage() {
                                                     <Button
                                                         variant="danger"
                                                         onClick={() => cancelAppointment(a.id)}
-                                                        disabled={joining || busy || loading || updatingId != null}
+                                                        disabled={joining || completing || busy || loading || updatingId != null}
                                                     >
                                                         {busy ? 'Cancelling…' : 'Cancel'}
                                                     </Button>

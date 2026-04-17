@@ -54,6 +54,10 @@ public class Appointment {
 		return slotTime;
 	}
 
+	public void setSlotTime(Instant slotTime) {
+		this.slotTime = slotTime;
+	}
+
 	public AppointmentStatus getStatus() {
 		return status;
 	}

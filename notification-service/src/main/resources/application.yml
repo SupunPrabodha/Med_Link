@@ -4,6 +4,13 @@ server:
 spring:
   application:
     name: notification-service
+  datasource:
+    url: jdbc:postgresql://localhost:5439/notificationdb
+    username: notification
+    password: notification
+  jpa:
+    hibernate:
+      ddl-auto: update
   rabbitmq:
     host: localhost
     port: 5672

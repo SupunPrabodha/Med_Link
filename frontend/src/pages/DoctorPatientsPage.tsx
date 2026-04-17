@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
 import { Badge, Button, Card } from '../ui/primitives'
@@ -110,6 +111,12 @@ export function DoctorPatientsPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
+                                        <Link
+                                            to={`/app/doctor/prescriptions?patientId=${p.patientId}`}
+                                            className="inline-flex h-10 select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 transition hover:bg-slate-50 active:bg-white"
+                                        >
+                                            Issue prescription
+                                        </Link>
                                         <Badge>{p.confirmedAppointmentsCount} confirmed</Badge>
                                         <Badge>{p.reports.length} reports</Badge>
                                         <span className="text-xs text-slate-500">▼</span>

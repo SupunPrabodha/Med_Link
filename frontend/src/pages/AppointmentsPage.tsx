@@ -153,6 +153,14 @@ export function AppointmentsPage() {
   }, [])
 
   useEffect(() => {
+    const id = window.setInterval(() => {
+      void refresh()
+    }, 10_000)
+    return () => window.clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin])
+
+  useEffect(() => {
     if (!isAdmin) void refreshSlots()
   }, [doctorId, isAdmin])
 

@@ -6,4 +6,5 @@ metadata:
 data:
   EUREKA_URL: "http://service-discovery:8761/eureka"
   RABBIT_HOST: "rabbitmq"
+  JITSI_BASE_URL: "https://meet.jit.si"
 

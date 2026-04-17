@@ -27,6 +27,15 @@ public class PatientProfile {
 	@Column(nullable = true)
 	private String address;
 
+	@Column(nullable = true, length = 20)
+	private String gender;
+
+	@Column(nullable = true, length = 200)
+	private String emergencyContactName;
+
+	@Column(nullable = true, length = 50)
+	private String emergencyContactPhone;
+
 	@Column(nullable = true)
 	private String profilePhotoUrl;
 
@@ -86,6 +95,33 @@ public class PatientProfile {
 
 	public void setAddress(String address) {
 		this.address = address;
+		this.updatedAt = Instant.now();
+	}
+
+	public String getGender() {
+		return gender;
+	}
+
+	public void setGender(String gender) {
+		this.gender = gender;
+		this.updatedAt = Instant.now();
+	}
+
+	public String getEmergencyContactName() {
+		return emergencyContactName;
+	}
+
+	public void setEmergencyContactName(String emergencyContactName) {
+		this.emergencyContactName = emergencyContactName;
+		this.updatedAt = Instant.now();
+	}
+
+	public String getEmergencyContactPhone() {
+		return emergencyContactPhone;
+	}
+
+	public void setEmergencyContactPhone(String emergencyContactPhone) {
+		this.emergencyContactPhone = emergencyContactPhone;
 		this.updatedAt = Instant.now();
 	}
 

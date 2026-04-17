@@ -80,6 +80,45 @@ public class AppointmentAppService {
 		return saved;
 	}
 
+	@Transactional
+	public Appointment reschedule(Long appointmentId, Long requesterUserId, boolean isAdmin, Instant newSlotTime) {
+		if (newSlotTime == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "slotTime is required");
+		}
+		if (!newSlotTime.isAfter(Instant.now().plus(Duration.ofMinutes(1)))) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Slot time must be in the future");
+		}
+
+		Appointment appt = repo.findById(appointmentId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment not found"));
+
+		if (!isAdmin && !appt.getPatientId().equals(requesterUserId)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed");
+		}
+		if (appt.getStatus() == AppointmentStatus.CANCELLED) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot reschedule a cancelled appointment");
+		}
+		if (appt.getStatus() == AppointmentStatus.CONFIRMED) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot reschedule a confirmed appointment; cancel it instead");
+		}
+
+		Long doctorId = appt.getDoctorId();
+		if (!doctorAllowsSlot(doctorId, newSlotTime)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Doctor is not available at that time");
+		}
+		if (repo.existsByDoctorIdAndSlotTimeAndStatusNotAndIdNot(doctorId, newSlotTime, AppointmentStatus.CANCELLED, appt.getId())) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "That slot is already booked");
+		}
+
+		Instant oldSlotTime = appt.getSlotTime();
+		appt.setSlotTime(newSlotTime);
+		appt.setAppoinmentApproval(null);
+
+		rabbit.convertAndSend(RabbitConfig.EXCHANGE, "appointment.rescheduled",
+				new AppointmentEvents.AppointmentRescheduled(appt.getId(), appt.getPatientId(), appt.getDoctorId(), oldSlotTime, newSlotTime, Instant.now()));
+		return appt;
+	}
+
 	public List<Instant> availableSlots(Long doctorId, int days) {
 		if (doctorId == null || doctorId <= 0) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid doctorId");

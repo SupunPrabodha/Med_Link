@@ -1,44 +1,40 @@
 package lk.medilink.notification.store;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.List;
-import java.util.UUID;
 
 @Component
 public class NotificationStore {
-	private static final int MAX_ITEMS = 500;
+	private final NotificationRepository repo;
 
-	private final Deque<NotificationItem> items = new ArrayDeque<>();
+	public NotificationStore(NotificationRepository repo) {
+		this.repo = repo;
+	}
 
 	public NotificationItem add(String type, String message, Long userId) {
-		NotificationItem item = new NotificationItem(UUID.randomUUID().toString(), Instant.now(), type, message, userId);
-		synchronized (items) {
-			items.addFirst(item);
-			while (items.size() > MAX_ITEMS) {
-				items.removeLast();
-			}
-		}
-		return item;
+		NotificationEntity saved = repo.save(new NotificationEntity(type, message, userId));
+		return toItem(saved);
 	}
 
 	public List<NotificationItem> listForUser(Long userId, int limit) {
 		int capped = Math.max(1, Math.min(limit, 200));
-		synchronized (items) {
-			return items.stream()
-					.filter(n -> n.userId() != null && n.userId().equals(userId))
-					.limit(capped)
-					.toList();
-		}
+		return repo.findByUserIdOrderByCreatedAtDesc(
+				userId,
+				PageRequest.of(0, capped, Sort.by(Sort.Direction.DESC, "createdAt"))
+		).stream().map(NotificationStore::toItem).toList();
 	}
 
 	public List<NotificationItem> listAll(int limit) {
 		int capped = Math.max(1, Math.min(limit, 500));
-		synchronized (items) {
-			return items.stream().limit(capped).toList();
-		}
+		return repo.findAllByOrderByCreatedAtDesc(
+				PageRequest.of(0, capped, Sort.by(Sort.Direction.DESC, "createdAt"))
+		).stream().map(NotificationStore::toItem).toList();
+	}
+
+	private static NotificationItem toItem(NotificationEntity e) {
+		return new NotificationItem(e.getId(), e.getCreatedAt(), e.getType(), e.getMessage(), e.getUserId());
 	}
 }

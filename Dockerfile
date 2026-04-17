@@ -20,6 +20,8 @@ COPY notification-service/pom.xml notification-service/pom.xml
 COPY patient-service/pom.xml patient-service/pom.xml
 COPY payment-service/pom.xml payment-service/pom.xml
 COPY telemedicine-service/pom.xml telemedicine-service/pom.xml
+COPY prescription-service/pom.xml prescription-service/pom.xml
+COPY symptom-checker-service/pom.xml symptom-checker-service/pom.xml
 COPY service-discovery/pom.xml service-discovery/pom.xml
 COPY common/pom.xml common/pom.xml
 
