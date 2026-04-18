@@ -250,20 +250,12 @@ Databases (PostgreSQL): authdb, patientdb, doctordb, appointmentdb, paymentdb, t
     <p class="muted">The smoke test executes the complete workflow through the gateway and validates key outcomes (confirmation, session provisioning, completion notifications, admin review actions).</p>
 
     <h2 id="contrib">7. Individual Contributions</h2>
-    <p><strong>Primary ownership by member:</strong></p>
     <ul>
-			<li>LIYANAGE S.P. (IT23187450): Patient Management Service, Authentication Service (JWT issuance), Telemedicine Service, and API Gateway identity propagation (JWT/RBAC headers).</li>
-			<li>WICKRAMATHILAKA N.M. (IT23165434): Payment Service, Doctor Management Service, payment-provider integrations (PayHere/Stripe), and admin payment review/refund flows.</li>
-			<li>RAMANAYAKE R.H.B.D.G. (IT23164130): Appointment Service, AI Symptom Checker Service integration, real-time appointment updates (SSE), and event-driven appointment lifecycle handling.</li>
-			<li>ALAHAKOON A.W.A.C.N. (IT23163522): Notification Service (Brevo/Twilio delivery), Prescription Service, and notification event-consumer orchestration.</li>
+      <li>LIYANAGE S.P. (IT23187450) – Patient Management Service, Authentication, and Telemedicine Service.</li>
+      <li>WICKRAMATHILAKA N.M. (IT23165434) – Payment Services and Doctor Management Service.</li>
+      <li>RAMANAYAKE R.H.B.D.G. (IT23164130) – Appointment Service and AI Symptom Checker Service.</li>
+      <li>ALAHAKOON A.W.A.C.N. (IT23163522) – Notification Services (Brevo and Twilio) and Prescriptions Service.</li>
     </ul>
-		<p><strong>Shared core integration responsibilities:</strong></p>
-		<ul>
-			<li>Service discovery registration consistency (Eureka) and gateway route alignment: LIYANAGE S.P.</li>
-			<li>Frontend-to-backend integration for payment and doctor modules: WICKRAMATHILAKA N.M.</li>
-			<li>Cross-service appointment orchestration and workflow verification support: RAMANAYAKE R.H.B.D.G.</li>
-			<li>Operational notification delivery reliability (email/SMS dispatch wiring): ALAHAKOON A.W.A.C.N.</li>
-		</ul>
 
     <h2 id="appendix">8. Appendix – Code Written (NO screenshots)</h2>
 
